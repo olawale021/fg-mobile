@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -41,3 +42,5 @@ app-example
 # generated native folders
 /ios
 /android
+assets/images/quality-work-abstract-concept-vector-illustration-quality-workplace-employee-performance-experienced.zip
+assets/images/Unconfirmed 50250.crdownload

@@ -1,0 +1,31 @@
+{
+  "problem-clarity": {
+    "id": "problem-clarity",
+    "title": "Problem Clarity Fundamentals",
+    "duration": "15 min",
+    "category": "Problem Discovery",
+    "description": "Learn how to clearly define and articulate the problem you're solving.",
+    "content": [
+      "Welcome to Problem Clarity Fundamentals! In this lesson, you'll learn the essential skills for defining and articulating the problem your startup aims to solve.",
+      "## Why Problem Clarity Matters\n\nMany startups fail not because they can't build a solution, but because they never truly understood the problem they were solving. Clear problem definition is the foundation of a successful venture.",
+      "## The Problem Statement Framework\n\n1. **Who** has the problem?\n2. **What** is the specific pain point?\n3. **When** does this problem occur?\n4. **Why** is this problem important to solve?\n5. **How** are people currently dealing with it?",
+      "## Key Takeaways\n\n• A well-defined problem is half-solved\n• Talk to your target users regularly\n• Be specific - avoid vague problem statements\n• Validate that the problem is worth solving\n• Document everything you learn",
+      "## Next Steps\n\nTake 30 minutes to write down your problem statement using the framework above. Share it with 3 potential customers and get their feedback."
+    ]
+  },
+  "target-market": {
+    "id": "target-market",
+    "title": "Understanding Your Target Market",
+    "duration": "20 min",
+    "category": "Market Research",
+    "description": "Discover how to identify and deeply understand your ideal customers.",
+    "content": [
+      "Welcome to Understanding Your Target Market! This lesson will help you identify and deeply understand your ideal customers.",
+      "## The Importance of Market Understanding\n\nKnowing your target market isn't just about demographics - it's about understanding their behaviors, motivations, and pain points deeply.",
+      "## Building Your Ideal Customer Profile\n\n1. **Demographics**: Age, location, income, education\n2. **Psychographics**: Values, interests, lifestyle\n3. **Behaviors**: How they currently solve problems\n4. **Pain Points**: What keeps them up at night\n5. **Goals**: What they're trying to achieve",
+      "## Market Research Methods\n\n• Customer interviews (minimum 20-30)\n• Surveys and questionnaires\n• Social media listening\n• Competitor analysis\n• Industry reports and data",
+      "## Common Mistakes to Avoid\n\n• Assuming everyone is your customer\n• Relying solely on assumptions\n• Not talking to real potential customers\n• Ignoring negative feedback\n• Not updating your understanding over time",
+      "## Action Items\n\nCreate a detailed profile of your ideal customer. Then, find and interview 5 people who match this profile. Document what you learn."
+    ]
+  }
+}

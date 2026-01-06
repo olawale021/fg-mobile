@@ -1,0 +1,497 @@
+[
+  {
+    "title": "Who to Recruit First",
+    "slug": "who-to-recruit-first",
+    "description": "Learn how to build your first team with ownership, not just skills.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou are a first-time founder in week 3.\n\nYou have a product idea, a tiny budget, and a deadline you set in your own head. You bring in two people fast, one is a friend who is \"down to help,\" one is a freelancer who looks talented. By week 6, nothing is finished, nobody is fully accountable, and every decision still comes back to you. You start thinking, \"Maybe I'm bad at leadership,\" but the real issue is simpler, you recruited people without a clear test for ownership.",
+      "quickBreakdown": [
+        {
+          "title": "Risk coverage, not \"team.\"",
+          "description": "Your first \"team\" is not a team, it is risk coverage. Early stage risk is simple, build the core thing, ship it, and get it in front of users. Anyone you bring in must clearly remove one of those risks."
+        },
+        {
+          "title": "Ownership and proof, beat vibes.",
+          "description": "The #1 early-stage requirement is ownership, not skill, and never vibes. Skilled people who wait for instruction slow you down. Ownership shows as finishing, defining done, proposing next steps, and delivering proof through a deadline."
+        },
+        {
+          "title": "Outputs plus trial protect you.",
+          "description": "Define work as outputs, not time, and protect yourself with trials. Avoid vague help. Specify one output, one deadline, one acceptance bar. Use short trials to prevent commitment mistakes, extend when they pass, exit quickly when they fail."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "Only keep people who consistently turn unclear problems into finished outputs without you pushing them."
+      }
+    },
+    "category_slug": "team-building",
+    "tags": ["team", "recruitment", "ownership", "early-stage"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 1
+  },
+  {
+    "title": "Problem Clarity Fundamentals",
+    "slug": "problem-clarity-fundamentals",
+    "description": "Learn how to clearly define and articulate the problem you're solving.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou are pitching your startup to an investor. They ask, \"What problem are you solving?\" You start talking about your product features, your technology, your vision. Five minutes later, they still look confused. The meeting ends with a polite \"We'll be in touch.\" The problem wasn't your product, it was that you never clearly defined the problem you're solving.",
+      "quickBreakdown": [
+        {
+          "title": "Problems before solutions.",
+          "description": "Many startups fail not because they can't build a solution, but because they never truly understood the problem. Clear problem definition is the foundation. Start with who has the problem, what the specific pain point is, and why it matters."
+        },
+        {
+          "title": "Specificity wins.",
+          "description": "Vague problems lead to vague solutions. \"People need better communication\" is not a problem statement. \"Remote teams of 10-50 people waste 5 hours per week in unnecessary meetings\" is a problem you can solve."
+        },
+        {
+          "title": "Validate with real people.",
+          "description": "Your problem statement is a hypothesis until proven. Talk to at least 20 potential customers. If they don't immediately recognize the problem and show emotional response, you haven't found a real problem yet."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "A well-defined problem is half-solved. If you can't explain the problem in one sentence that makes someone nod, you're not ready to build."
+      }
+    },
+    "category_slug": "problem-clarity",
+    "tags": ["problem", "validation", "framework"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 2
+  },
+  {
+    "title": "Understanding Your Target Market",
+    "slug": "understanding-target-market",
+    "description": "Discover how to identify and deeply understand your ideal customers.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou built a product you're proud of. You launch it. Crickets. You post on social media, run some ads, tell your friends. A few sign-ups, but no real traction. You think the product needs more features. But the real issue is simpler, you built for \"everyone\" which means you built for no one. You never identified who specifically needs this and where they hang out.",
+      "quickBreakdown": [
+        {
+          "title": "Narrow beats broad.",
+          "description": "Your target market is not \"small businesses\" or \"millennials.\" It's \"solo consultants earning $100-200k who struggle with invoicing and spend 3+ hours weekly on admin.\" The narrower your focus, the easier to find and convince them."
+        },
+        {
+          "title": "Behaviors over demographics.",
+          "description": "Age and location matter less than behaviors. What do they read? Where do they ask questions? What tools do they already use? What triggers them to look for solutions? Understanding behaviors tells you how to reach them."
+        },
+        {
+          "title": "Pain level determines urgency.",
+          "description": "Not all problems are created equal. Some are annoying, some are urgent. Find people whose hair is on fire. They'll pay more, decide faster, and forgive early product issues because they need a solution now."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "If you can't name 10 specific people who desperately need your product and explain exactly where to find more like them, you don't know your market yet."
+      }
+    },
+    "category_slug": "customer-understanding",
+    "tags": ["market", "customers", "targeting"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 3
+  },
+  {
+    "title": "Your First MVP",
+    "slug": "your-first-mvp",
+    "description": "Learn what an MVP really is and how to build one that actually validates your idea.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou've been building for 4 months. The app is almost ready, just a few more features. Then 6 months. Then 8. You're perfecting things no customer has asked for. Meanwhile, your runway shrinks and you still don't know if anyone will pay. The MVP was supposed to take 6 weeks. What happened? You confused \"minimum\" with \"bad\" and \"viable\" with \"complete.\"",
+      "quickBreakdown": [
+        {
+          "title": "Minimum means one thing done well.",
+          "description": "An MVP is not a stripped-down version of your vision. It's the smallest thing that tests your core assumption. If your bet is that people will pay for X, build only X. Nothing else. One feature, done well, that proves or disproves your hypothesis."
+        },
+        {
+          "title": "Viable means someone pays or commits.",
+          "description": "Viable doesn't mean it works technically. It means someone values it enough to pay, sign up, or meaningfully engage. If you launch and get polite feedback but no real commitment, it wasn't viable, just functional."
+        },
+        {
+          "title": "Speed is a feature.",
+          "description": "The faster you ship, the faster you learn. Every week you spend building is a week you're not learning from real users. Set a hard deadline. Cut scope ruthlessly. Ship something embarrassing. Then iterate based on reality, not assumptions."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "Your MVP should make you slightly uncomfortable to show people. If you're proud of v1, you waited too long to ship."
+      }
+    },
+    "category_slug": "product-development",
+    "tags": ["mvp", "product", "building", "validation"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 4
+  },
+  {
+    "title": "Talking to Customers",
+    "slug": "talking-to-customers",
+    "description": "Master the art of customer conversations that reveal real insights.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou finally get a potential customer on a call. You're excited. You describe your product, explain the features, share your vision. They nod along, say \"sounds interesting,\" and you leave feeling validated. Two weeks later, they ghost you. What happened? You talked when you should have listened. You pitched when you should have learned.",
+      "quickBreakdown": [
+        {
+          "title": "Questions over pitches.",
+          "description": "Customer conversations are not sales calls. Your job is to understand their world, not convince them of yours. Ask about their current situation, their struggles, their failed attempts to solve problems. Let them talk 80% of the time."
+        },
+        {
+          "title": "Past behavior over future promises.",
+          "description": "\"Would you use this?\" is a useless question. People are bad at predicting their own behavior. Instead ask: \"How do you currently handle this? What have you tried? How much have you spent on solutions?\" Past behavior predicts future behavior."
+        },
+        {
+          "title": "Dig into the pain.",
+          "description": "When they mention a problem, don't move on. Go deeper. \"Tell me more about that. When did that last happen? What did it cost you? How did it make you feel?\" The depth of emotion reveals the depth of the problem."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "A good customer conversation ends with you knowing something you didn't know before. If you only heard what you expected, you weren't really listening."
+      }
+    },
+    "category_slug": "customer-understanding",
+    "tags": ["customers", "interviews", "discovery", "research"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 5
+  },
+  {
+    "title": "Pricing Your Product",
+    "slug": "pricing-your-product",
+    "description": "Learn how to price your product without leaving money on the table or scaring customers away.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou're about to launch. Everything is ready except one thing, the price. You look at competitors, pick something in the middle, maybe a bit lower to be \"competitive.\" Three months later, you're getting customers but barely breaking even. You try to raise prices and existing customers revolt. You're trapped. The problem? You priced based on what others charge, not on the value you create.",
+      "quickBreakdown": [
+        {
+          "title": "Price on value, not cost.",
+          "description": "Your price should reflect the value you deliver, not your costs or competitor prices. If you save a business $10,000 per month, charging $500 is a bargain. Ask yourself: what is the outcome worth to them? Price as a fraction of that value."
+        },
+        {
+          "title": "Start higher than comfortable.",
+          "description": "You can always lower prices, but raising them is painful. Start at the high end of your range. If no one complains about price, you're too cheap. Some price resistance is healthy, it means you're capturing real value."
+        },
+        {
+          "title": "Test and iterate quickly.",
+          "description": "Pricing is not a one-time decision. Run experiments. Try different price points with different segments. Watch conversion rates, not just complaints. The right price is where you maximize revenue while maintaining acceptable conversion."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "If you're not embarrassed by your price, you're probably undercharging. The right price feels slightly uncomfortable to say out loud."
+      }
+    },
+    "category_slug": "traction-validation",
+    "tags": ["pricing", "revenue", "business-model", "monetization"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 6
+  },
+  {
+    "title": "Finding a Co-founder",
+    "slug": "finding-a-cofounder",
+    "description": "Discover how to find the right co-founder and avoid the wrong partnership.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou meet someone at a startup event. They're excited about your idea, they have skills you lack, and they want to join. Within a month, you're co-founders with a 50/50 split. Six months later, they're working half as much as you, disagreeing on every decision, and the relationship is toxic. Breaking up feels impossible. You rushed into a business marriage with someone you barely knew.",
+      "quickBreakdown": [
+        {
+          "title": "Work together before committing.",
+          "description": "Never make someone a co-founder based on conversations alone. Do a real project together first. Spend 2-4 weeks building something small. See how they handle stress, disagreements, and deadlines. The project reveals more than any interview."
+        },
+        {
+          "title": "Complementary skills, aligned values.",
+          "description": "You need different skills, not different values. A technical co-founder and a sales co-founder is great. But if one wants to build a lifestyle business and the other wants to go big, you'll tear each other apart. Align on the big picture before anything else."
+        },
+        {
+          "title": "Discuss the hard stuff upfront.",
+          "description": "Before you're co-founders, have the uncomfortable conversations. What if one person wants out? What if we disagree on strategy? How do we handle a down round? Who breaks ties? Write it down. Vesting schedules and exit clauses aren't pessimism, they're protection."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "A co-founder relationship is harder to exit than a marriage. Take at least as much time evaluating a co-founder as you would a life partner."
+      }
+    },
+    "category_slug": "team-building",
+    "tags": ["co-founder", "partnership", "team", "early-stage"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 7
+  },
+  {
+    "title": "Managing Your Runway",
+    "slug": "managing-your-runway",
+    "description": "Learn how to manage your startup's money so you don't run out before finding success.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou raised some money or saved up enough to quit your job. You feel rich. You rent a nice office, hire quickly, and sponsor a conference. Eight months later, you check your bank account and panic. You have 3 months left and no revenue. You start cutting, but it's too late and too painful. The problem wasn't spending, it was not tracking runway obsessively from day one.",
+      "quickBreakdown": [
+        {
+          "title": "Know your number daily.",
+          "description": "Runway is not a quarterly metric. Know exactly how many months you have left, updated weekly. At 6 months runway, you should be fundraising or cutting. At 3 months, you're in emergency mode. Ignorance is not bliss, it's death."
+        },
+        {
+          "title": "Default alive vs default dead.",
+          "description": "Ask yourself: if nothing changes, do we survive? If expenses exceed revenue growth trajectory, you're default dead. Your only job is getting to default alive, where natural growth covers costs. Every decision should move you toward that state."
+        },
+        {
+          "title": "Cut deep once, not shallow twice.",
+          "description": "When you need to cut costs, cut deeper than feels necessary. Shallow cuts mean you'll cut again in 3 months, destroying morale twice. One painful cut that extends runway to 18+ months is better than death by a thousand small cuts."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "Startups don't die from lack of ideas. They die from running out of money. Runway management isn't finance, it's survival."
+      }
+    },
+    "category_slug": "execution-consistency",
+    "tags": ["runway", "finance", "cash", "survival"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 8
+  },
+  {
+    "title": "Getting Your First 100 Users",
+    "slug": "first-100-users",
+    "description": "Learn the unscalable tactics that get your first users through the door.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou launched your product. You posted on Twitter, Product Hunt, and Hacker News. You got a spike of traffic, some sign-ups, but most never came back. Now traffic is dead and you're waiting for organic growth that never comes. You think you need better marketing. But the real issue is you tried to scale before you had something worth scaling. The first 100 users don't come from marketing.",
+      "quickBreakdown": [
+        {
+          "title": "Do things that don't scale.",
+          "description": "Your first users won't come from ads or viral growth. They come from personal outreach, one at a time. Email people individually. Offer to set up the product for them. Give them your phone number. These tactics don't scale, that's the point. They work when nothing else will."
+        },
+        {
+          "title": "Go where they already are.",
+          "description": "Don't try to pull users to you. Go to them. Find the communities, forums, and groups where your target users already hang out. Provide value there first. Answer questions, share insights, be helpful. Then, when appropriate, mention your product."
+        },
+        {
+          "title": "Make the first users feel special.",
+          "description": "Your first 100 users should feel like insiders, not guinea pigs. Give them exclusive access, respond to every message, implement their feedback visibly. Turn them into advocates who recruit the next 100 for you through word of mouth."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "If you can't get 100 users through manual, unscalable effort, you won't get 10,000 through marketing. The first 100 are about learning, not growth."
+      }
+    },
+    "category_slug": "traction-validation",
+    "tags": ["users", "growth", "traction", "early-stage"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 9
+  },
+  {
+    "title": "When to Pivot",
+    "slug": "when-to-pivot",
+    "description": "Learn how to recognize when it's time to change direction and how to do it right.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou've been at this for 18 months. The product works, you have some users, but growth is flat. You keep adding features, trying new channels, optimizing funnels. Nothing moves the needle. Your investors are patient but concerned. You feel stuck but changing direction feels like admitting failure. So you keep pushing on the same path, hoping something will break through. It won't.",
+      "quickBreakdown": [
+        {
+          "title": "Recognize the signals early.",
+          "description": "Flat growth despite consistent effort is a signal. Users signing up but not staying is a signal. People saying \"cool\" but not paying is a signal. The market is giving you feedback. The question is whether you're listening or just rationalizing."
+        },
+        {
+          "title": "Pivot the strategy, not the vision.",
+          "description": "A pivot isn't starting over. It's changing your approach while keeping your core insight. You might pivot from B2C to B2B, from a platform to a tool, from one customer segment to another. The best pivots leverage what you've learned, not abandon it."
+        },
+        {
+          "title": "Move fast once you decide.",
+          "description": "The worst place is in between, half-committed to the old thing and half-exploring the new. Once you decide to pivot, move decisively. Kill the old projects, redeploy resources, and give the new direction a real chance. Half-pivots fail."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "A pivot is not failure. Stubbornly pursuing something that isn't working, that's failure. The best founders pivot early and often until they find what works."
+      }
+    },
+    "category_slug": "execution-consistency",
+    "tags": ["pivot", "strategy", "direction", "change"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 10
+  },
+  {
+    "title": "Handling Rejection",
+    "slug": "handling-rejection",
+    "description": "Learn how to process rejection and use it to become a stronger founder.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou just got rejected by the 15th investor. Before that, 3 potential customers said no. Your top candidate chose another company. You start questioning everything. Maybe the idea is bad. Maybe you're not cut out for this. You consider giving up. But here's what no one tells you, rejection is not a bug in the founder journey, it's the main feature.",
+      "quickBreakdown": [
+        {
+          "title": "Separate rejection from identity.",
+          "description": "When someone says no to your startup, they're not saying no to you as a person. They're saying no to a bet, given their context, risk tolerance, and information. Their no doesn't define your worth or your startup's potential."
+        },
+        {
+          "title": "Extract the learning, discard the emotion.",
+          "description": "Every rejection contains information. Ask why. Listen without defending. Was it timing? Market? Traction? You? Some feedback is noise, but patterns in rejections point to real issues. Find the pattern, fix the issue, try again."
+        },
+        {
+          "title": "Rejection is a filter, not a wall.",
+          "description": "You don't need everyone to say yes. You need the right people to say yes. Rejections filter out those who weren't a fit, saving you from bad partnerships, wrong investors, or misaligned customers. Each no gets you closer to the right yes."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "Every successful founder has a rejection count in the hundreds. The difference is they kept going. Rejection is the entrance fee to the game."
+      }
+    },
+    "category_slug": "founder-identity",
+    "tags": ["rejection", "mindset", "resilience", "psychology"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 11
+  },
+  {
+    "title": "Building in Public",
+    "slug": "building-in-public",
+    "description": "Learn how sharing your journey can accelerate growth and build a loyal audience.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou're building in silence. You plan to announce when the product is perfect. Months pass. You finally launch to... nobody. No audience, no anticipation, no feedback loop. Meanwhile, another founder has been sharing their journey, their mistakes, their lessons. They have thousands of followers, waiting customers, and a community that gives feedback. What did they have that you didn't? The courage to build in public.",
+      "quickBreakdown": [
+        {
+          "title": "Start before you're ready.",
+          "description": "You don't need a product to build in public. Share what you're learning, what you're struggling with, what you're exploring. The journey is the content. By the time you launch, you'll have an audience who already feels invested in your success."
+        },
+        {
+          "title": "Be honest, not polished.",
+          "description": "Building in public isn't marketing, it's transparency. Share the failures alongside wins. Show the messy reality. People connect with struggle, not perfection. Authenticity builds trust that no amount of polished content can match."
+        },
+        {
+          "title": "Create accountability through visibility.",
+          "description": "When you share your goals publicly, you're more likely to achieve them. Public commitments create positive pressure. Your audience becomes accountability partners who expect updates and cheer you on."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "The best time to start building in public was when you started your company. The second best time is today."
+      }
+    },
+    "category_slug": "traction-validation",
+    "tags": ["building-in-public", "marketing", "audience", "transparency"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 12
+  },
+  {
+    "title": "Founder Mental Health",
+    "slug": "founder-mental-health",
+    "description": "Learn how to protect your mental health while building a company.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou haven't slept well in weeks. Every moment you're not working, you feel guilty. Your relationships are suffering but you tell yourself it's temporary. You're anxious, irritable, and running on caffeine. You think this is just what founding is like, hustle culture glorified. But you're burning out, and a burned-out founder can't build anything. Your mental health isn't a luxury, it's infrastructure.",
+      "quickBreakdown": [
+        {
+          "title": "Burnout is not a badge of honor.",
+          "description": "The mythology of the sleepless founder is toxic. Chronic exhaustion makes you stupid, slow, and short-tempered. You make worse decisions. You damage relationships. The best founders protect their energy because they know they're playing a long game."
+        },
+        {
+          "title": "Build recovery into your system.",
+          "description": "You can't rely on willpower to rest. Schedule non-negotiable recovery time. Exercise, sleep, and time off are not rewards for success, they're requirements for sustained performance. Treat them like investor meetings, non-cancelable."
+        },
+        {
+          "title": "Separate identity from outcome.",
+          "description": "If your entire self-worth is tied to your startup's success, every setback becomes an existential crisis. You are not your company. Build a life outside of work, relationships, hobbies, interests. When the startup struggles, you need something to hold onto."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "You can't pour from an empty cup. Protecting your mental health isn't selfish, it's strategic. The company needs you functional, not just present."
+      }
+    },
+    "category_slug": "founder-identity",
+    "tags": ["mental-health", "burnout", "wellbeing", "founder-life"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 13
+  },
+  {
+    "title": "Raising Your First Round",
+    "slug": "raising-first-round",
+    "description": "Learn how to approach fundraising strategically and avoid common mistakes.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou need money to grow. You start emailing investors, taking any meeting you can get. Months pass. You've had 50 coffee chats, 20 partner meetings, and 0 term sheets. You're exhausted and confused. Some said \"too early,\" others said \"not our focus.\" Your confidence is shot. The problem wasn't your idea, it was approaching fundraising like a lottery instead of a process.",
+      "quickBreakdown": [
+        {
+          "title": "Raise from the right investors.",
+          "description": "Not all investors are right for you. Before reaching out, research deeply. Do they invest at your stage? In your sector? What's their typical check size? Cold emails to random VCs waste everyone's time. Target 30 investors who actually make sense, not 300 who don't."
+        },
+        {
+          "title": "Create urgency through parallel process.",
+          "description": "Investors move when they fear missing out. Run a tight, parallel process. Get multiple meetings in the same 2-3 week window. When one investor knows others are looking, decisions accelerate. Scattered, sequential fundraising drags on forever."
+        },
+        {
+          "title": "Know your numbers cold.",
+          "description": "You will be asked about market size, unit economics, growth rate, and burn. Know these numbers instantly, no fumbling for slides. Investors pattern-match on founder competence. Not knowing your numbers signals you don't know your business."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "Fundraising is a full-time job for a limited time, not a part-time distraction forever. Sprint hard for 2-3 months, then get back to building."
+      }
+    },
+    "category_slug": "traction-validation",
+    "tags": ["fundraising", "investors", "seed", "venture-capital"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 14
+  },
+  {
+    "title": "Saying No to Opportunities",
+    "slug": "saying-no",
+    "description": "Learn why saying no is the most important skill for a founder to develop.",
+    "format": "lesson",
+    "content": {
+      "intro": "Picture this:\nYou're getting traction. Opportunities are coming in. A big company wants a partnership. An investor offers to connect you with potential customers. Someone suggests a pivot into an adjacent market. You say yes to all of it. Suddenly, you're stretched thin, chasing five directions, making progress in none. Your focus is gone. You forgot that every yes is a no to something else.",
+      "quickBreakdown": [
+        {
+          "title": "Focus is not about doing more.",
+          "description": "Strategy is choosing what not to do. Every opportunity you pursue takes time and energy from your core mission. The most successful startups are maniacally focused on one thing. They say no to good opportunities to say yes to great ones."
+        },
+        {
+          "title": "Use your priorities as a filter.",
+          "description": "Before any decision, ask: does this directly advance our #1 goal? If not, it's probably a distraction dressed as opportunity. Partnerships, features, markets, they all need to pass this filter. If it doesn't clearly help the main thing, it's a no."
+        },
+        {
+          "title": "Practice saying no gracefully.",
+          "description": "No doesn't have to be rude. \"Thanks for thinking of us, but we're focused on X right now\" is enough. Most people respect clarity. The ones who push back after a clear no are showing you who they are, and saving you from a bad partner."
+        }
+      ],
+      "rememberThis": {
+        "title": "Remember this:",
+        "content": "If you're not saying no to things that seem good, you're not focused enough. The cost of yes is always higher than it appears."
+      }
+    },
+    "category_slug": "execution-consistency",
+    "tags": ["focus", "priorities", "strategy", "decision-making"],
+    "is_premium": false,
+    "estimated_duration_minutes": 5,
+    "author": "Founder Groundworks Team",
+    "display_order": 15
+  }
+]
