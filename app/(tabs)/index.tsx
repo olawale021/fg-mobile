@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '@/lib/supabase/client';
 import { getScoreBandLabel } from '@/lib/scoring';
 import { useAuth } from '@/contexts/auth-context';
@@ -8,6 +9,7 @@ import { useTheme } from '@/contexts/theme-context';
 import { router } from 'expo-router';
 import { getLessonsForWeakAreas, Lesson } from '@/lib/lessons';
 import { getWeakAreasByCategory } from '@/lib/weak-areas';
+import { getUnlockedLessons } from '@/lib/lesson-unlocks';
 
 interface UserProfile {
   first_name: string;
@@ -17,6 +19,8 @@ interface UserProfile {
   total_content_completed: number;
   total_learning_minutes: number;
   is_premium: boolean;
+  current_streak_days: number;
+  longest_streak_days: number;
 }
 
 export default function DashboardScreen() {
@@ -26,12 +30,15 @@ export default function DashboardScreen() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [weakCategories, setWeakCategories] = useState<string[]>([]);
   const [recommendedLessons, setRecommendedLessons] = useState<Lesson[]>([]);
+  const [completedSlugs, setCompletedSlugs] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      loadUserProfile();
-    }
-  }, [user, authLoading]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!authLoading && user) {
+        loadUserProfile();
+      }
+    }, [user, authLoading])
+  );
 
   const loadUserProfile = async () => {
     try {
@@ -62,9 +69,25 @@ export default function DashboardScreen() {
       const categoryNames = Object.keys(weakAreasByCategory);
       setWeakCategories(categoryNames);
 
-      // Get recommended lessons based on weak areas
-      const lessons = getLessonsForWeakAreas(categoryNames, 5);
-      setRecommendedLessons(lessons);
+      // Get unlocked lesson slugs
+      const unlockedSlugs = await getUnlockedLessons(user.id);
+
+      // Get completed lesson slugs
+      const { data: completedData } = await supabase
+        .from('user_lesson_completions')
+        .select('content_slug')
+        .eq('user_id', user.id)
+        .eq('status', 'completed');
+
+      const completedSet = new Set(completedData?.map(c => c.content_slug) || []);
+      setCompletedSlugs(completedSet);
+
+      // Get recommended lessons based on weak areas, filtered to unlocked only
+      const allRecommended = getLessonsForWeakAreas(categoryNames, 10);
+      const unlockedRecommended = allRecommended.filter(lesson =>
+        unlockedSlugs.includes(lesson.id)
+      ).slice(0, 5);
+      setRecommendedLessons(unlockedRecommended);
     } catch (error) {
       console.error('Unexpected error:', error);
     } finally {
@@ -118,6 +141,16 @@ export default function DashboardScreen() {
           </View>
           <Text style={[styles.scoreValue, { color: '#192B47' }]}>{userProfile.base_score}</Text>
           <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>out of 100</Text>
+
+          {/* Streak Display */}
+          {userProfile.current_streak_days > 0 && (
+            <View style={styles.streakContainer}>
+              <Text style={styles.streakEmoji}>🔥</Text>
+              <Text style={styles.streakValue}>{userProfile.current_streak_days}</Text>
+              <Text style={styles.streakLabel}>day streak</Text>
+            </View>
+          )}
+
           <Pressable style={[styles.viewDetailsButton, { backgroundColor: '#192B47' }]}>
             <Text style={[styles.viewDetailsText, { color: '#FFFFFF' }]}>View Details</Text>
           </Pressable>
@@ -162,51 +195,72 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Continue Learning Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Continue Learning</Text>
-          <View style={[styles.emptyState, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}>
-            <Text style={styles.emptyStateIcon}>📖</Text>
-            <Text style={[styles.emptyStateText, { color: '#192B47' }]}>Start your first lesson</Text>
-            <Text style={[styles.emptyStateSubtext, { color: '#6B7280' }]}>
-              Explore curated content to strengthen your founder skills
-            </Text>
-            <Pressable style={[styles.primaryButton, { backgroundColor: '#192B47' }]}>
-              <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>Browse Content</Text>
+        {/* Continue Learning Section - only show if user hasn't completed any lessons */}
+        {completedSlugs.size === 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Continue Learning</Text>
+            <Pressable
+              style={[styles.emptyState, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}
+              onPress={() => router.push('/(tabs)/library')}
+            >
+              <Text style={styles.emptyStateIcon}>📖</Text>
+              <Text style={[styles.emptyStateText, { color: '#192B47' }]}>Start your first lesson</Text>
+              <Text style={[styles.emptyStateSubtext, { color: '#6B7280' }]}>
+                Explore curated content to strengthen your founder skills
+              </Text>
+              <View style={[styles.primaryButton, { backgroundColor: '#192B47' }]}>
+                <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>Browse Content</Text>
+              </View>
             </Pressable>
           </View>
-        </View>
+        )}
 
         {/* Recommended Content */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended for You</Text>
 
-          {recommendedLessons.map((lesson) => (
-            <Pressable
-              key={lesson.id}
-              style={[styles.lessonCard, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}
-              onPress={() => router.push(`/lesson/${lesson.id}`)}
-            >
-              <View style={[styles.lessonBadge, { backgroundColor: '#192B47' }]}>
-                <Text style={[styles.lessonBadgeText, { color: '#FFFFFF' }]}>LESSON</Text>
-              </View>
-
-              <Text style={[styles.lessonCategory, { color: '#6B7280' }]}>
-                {lesson.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </Text>
-              <Text style={[styles.lessonTitle, { color: '#192B47' }]}>{lesson.title}</Text>
-              <Text style={[styles.lessonDescription, { color: '#6B7280' }]} numberOfLines={2}>
-                {lesson.description}
-              </Text>
-
-              <View style={styles.lessonFooter}>
-                <Text style={[styles.lessonDuration, { color: '#6B7280' }]}>⏱️ {lesson.duration}</Text>
-                <View style={[styles.startButton, { backgroundColor: '#192B47' }]}>
-                  <Text style={[styles.startButtonText, { color: '#FFFFFF' }]}>Start →</Text>
+          {recommendedLessons.map((lesson) => {
+            const isCompleted = completedSlugs.has(lesson.id);
+            return (
+              <Pressable
+                key={lesson.id}
+                style={[
+                  styles.lessonCard,
+                  { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
+                  isCompleted && styles.lessonCardCompleted
+                ]}
+                onPress={() => router.push(`/lesson/${lesson.id}`)}
+              >
+                <View style={styles.badgeRow}>
+                  <View style={[styles.lessonBadge, { backgroundColor: '#192B47' }]}>
+                    <Text style={[styles.lessonBadgeText, { color: '#FFFFFF' }]}>LESSON</Text>
+                  </View>
+                  {isCompleted && (
+                    <View style={styles.completedBadge}>
+                      <Text style={styles.completedBadgeText}>✓ Completed</Text>
+                    </View>
+                  )}
                 </View>
-              </View>
-            </Pressable>
-          ))}
+
+                <Text style={[styles.lessonCategory, { color: '#6B7280' }]}>
+                  {lesson.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                </Text>
+                <Text style={[styles.lessonTitle, { color: '#192B47' }]}>{lesson.title}</Text>
+                <Text style={[styles.lessonDescription, { color: '#6B7280' }]} numberOfLines={2}>
+                  {lesson.description}
+                </Text>
+
+                <View style={styles.lessonFooter}>
+                  <Text style={[styles.lessonDuration, { color: '#6B7280' }]}>⏱️ {lesson.duration}</Text>
+                  <View style={[styles.startButton, { backgroundColor: isCompleted ? '#10B981' : '#192B47' }]}>
+                    <Text style={[styles.startButtonText, { color: '#FFFFFF' }]}>
+                      {isCompleted ? 'Review →' : 'Start →'}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -297,6 +351,31 @@ const styles = StyleSheet.create({
     fontFamily: 'HostGrotesk-Regular',
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 12,
+  },
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  streakEmoji: {
+    fontSize: 18,
+    marginRight: 6,
+  },
+  streakValue: {
+    fontSize: 18,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#D97706',
+    marginRight: 4,
+  },
+  streakLabel: {
+    fontSize: 14,
+    fontFamily: 'HostGrotesk-Medium',
+    color: '#D97706',
   },
   viewDetailsButton: {
     backgroundColor: '#FFFFFF',
@@ -396,13 +475,32 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 12,
   },
+  lessonCardCompleted: {
+    borderColor: '#10B981',
+    borderWidth: 2,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  completedBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  completedBadgeText: {
+    fontSize: 11,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#FFFFFF',
+  },
   lessonBadge: {
     backgroundColor: '#192B47',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
   },
   lessonBadgeText: {
     fontSize: 10,

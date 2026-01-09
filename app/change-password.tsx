@@ -17,17 +17,20 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 
 interface PasswordData {
+  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
 
 export default function ChangePasswordScreen() {
-  const { updatePassword } = useAuth();
+  const { updatePassword, verifyPassword } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [formData, setFormData] = useState<PasswordData>({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
@@ -56,10 +59,16 @@ export default function ChangePasswordScreen() {
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof PasswordData, string>> = {};
 
+    if (!formData.currentPassword) {
+      newErrors.currentPassword = 'Current password is required';
+    }
+
     if (!formData.newPassword) {
       newErrors.newPassword = 'New password is required';
     } else if (!isPasswordValid()) {
       newErrors.newPassword = 'Password does not meet requirements';
+    } else if (formData.newPassword === formData.currentPassword) {
+      newErrors.newPassword = 'New password must be different from current password';
     }
 
     if (!formData.confirmPassword) {
@@ -78,6 +87,16 @@ export default function ChangePasswordScreen() {
     setSaving(true);
 
     try {
+      // First verify the current password
+      const { error: verifyError } = await verifyPassword(formData.currentPassword);
+
+      if (verifyError) {
+        setErrors({ ...errors, currentPassword: 'Current password is incorrect' });
+        setSaving(false);
+        return;
+      }
+
+      // If verification passed, update the password
       const { error } = await updatePassword(formData.newPassword);
 
       if (error) {
@@ -147,6 +166,33 @@ export default function ChangePasswordScreen() {
 
           {/* Form */}
           <View style={styles.form}>
+            {/* Current Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Current Password</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput, errors.currentPassword && styles.inputError]}
+                  value={formData.currentPassword}
+                  onChangeText={(text) => {
+                    setFormData({ ...formData, currentPassword: text });
+                    if (errors.currentPassword) setErrors({ ...errors, currentPassword: undefined });
+                  }}
+                  placeholder="Enter current password"
+                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                  secureTextEntry={!showCurrentPassword}
+                  autoCapitalize="none"
+                  editable={!saving}
+                />
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  <Text style={styles.eyeIcon}>{showCurrentPassword ? '🙈' : '👁️'}</Text>
+                </Pressable>
+              </View>
+              {errors.currentPassword && <Text style={styles.errorText}>{errors.currentPassword}</Text>}
+            </View>
+
             {/* New Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>New Password</Text>

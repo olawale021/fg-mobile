@@ -15,9 +15,10 @@ interface AuthContextType {
   }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  verifyPassword: (password: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   updateEmail: (newEmail: string) => Promise<{ error: Error | null; requiresConfirmation?: boolean }>;
-  deleteAccount: () => Promise<{ error: Error | null }>;
+  deleteAccount: (reason?: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -111,6 +112,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.replace('/login');
   };
 
+  const verifyPassword = async (password: string) => {
+    try {
+      if (!user?.email) {
+        return { error: new Error('No user email found') };
+      }
+
+      // Attempt to sign in with the current password to verify it
+      const { error } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+
+      if (error) {
+        return { error: new Error('Current password is incorrect') };
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const updatePassword = async (newPassword: string) => {
     try {
       const { error } = await supabase.auth.updateUser({
@@ -144,26 +167,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteAccount = async () => {
+  const deleteAccount = async (reason?: string) => {
     try {
       if (!user) {
         return { error: new Error('No user logged in') };
       }
 
-      // Delete user data from users table first
-      const { error: deleteDataError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', user.id);
+      // Call the delete-user edge function which has admin privileges
+      const { data, error: deleteError } = await supabase.functions.invoke('delete-user', {
+        body: { reason: reason || 'No reason provided' }
+      });
 
-      if (deleteDataError) {
-        console.error('Error deleting user data:', deleteDataError);
-        // Continue with auth deletion even if profile deletion fails
+      if (deleteError) {
+        console.error('Error deleting account:', deleteError);
+        return { error: new Error(deleteError.message || 'Failed to delete account') };
       }
 
-      // Delete the auth user - this requires a server-side function
-      // For now, we'll sign out the user and they can contact support
-      // In production, you'd use a Supabase Edge Function to delete the auth user
+      if (data?.error) {
+        console.error('Delete account error:', data.error);
+        return { error: new Error(data.error) };
+      }
+
+      // Clear local state and redirect to login
       await supabase.auth.signOut();
       setSession(null);
       setUser(null);
@@ -171,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null };
     } catch (error) {
+      console.error('Delete account exception:', error);
       return { error: error as Error };
     }
   };
@@ -182,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
+    verifyPassword,
     updatePassword,
     updateEmail,
     deleteAccount,

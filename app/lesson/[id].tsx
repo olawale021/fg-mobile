@@ -1,21 +1,90 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, ActivityIndicator, Modal, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
+import { useAuth } from '@/contexts/auth-context';
 import { getLessonById, getAllLessons } from '@/lib/lessons';
+import { isLessonUnlocked, getUnlockedLessons, markLessonCompleted, isLessonCompleted, ScoreProgressionResult } from '@/lib/lesson-unlocks';
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const lesson = getLessonById(id as string);
-  const allLessons = getAllLessons();
-  const currentIndex = allLessons.findIndex(l => l.id === id);
 
   const [completedPoints, setCompletedPoints] = useState<Set<number>>(new Set());
+  const [isUnlocked, setIsUnlocked] = useState<boolean | null>(null);
+  const [unlockedLessonIds, setUnlockedLessonIds] = useState<string[]>([]);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [scoreResult, setScoreResult] = useState<ScoreProgressionResult | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [wasAlreadyCompleted, setWasAlreadyCompleted] = useState(false);
 
-  const hasNextLesson = currentIndex < allLessons.length - 1;
+  // Check if lesson is unlocked and completed
+  useEffect(() => {
+    async function checkAccess() {
+      if (!user) {
+        setIsUnlocked(false);
+        return;
+      }
+
+      const unlocked = await isLessonUnlocked(user.id, id as string);
+      setIsUnlocked(unlocked);
+
+      // Get all unlocked lessons for navigation
+      const unlockedSlugs = await getUnlockedLessons(user.id);
+      setUnlockedLessonIds(unlockedSlugs);
+
+      // Check if lesson was already completed
+      const completed = await isLessonCompleted(user.id, id as string);
+      setWasAlreadyCompleted(completed);
+
+      // If already completed, mark all points as completed
+      if (completed && lesson) {
+        const allPoints = new Set(lesson.quickBreakdown.map((_, index) => index));
+        setCompletedPoints(allPoints);
+      }
+    }
+    checkAccess();
+  }, [user, id, lesson]);
+
+  // Calculate navigation based on unlocked lessons
+  const currentIndex = unlockedLessonIds.indexOf(id as string);
+  const hasNextLesson = currentIndex >= 0 && currentIndex < unlockedLessonIds.length - 1;
   const hasPrevLesson = currentIndex > 0;
+
+  // Show loading while checking unlock status
+  if (isUnlocked === null) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show locked state if lesson is not unlocked
+  if (isUnlocked === false) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.errorContainer}>
+          <Text style={styles.lockedIcon}>🔒</Text>
+          <Text style={[styles.errorText, { color: colors.text }]}>This lesson is not yet unlocked</Text>
+          <Text style={[styles.lockedSubtext, { color: colors.textSecondary }]}>
+            New lessons unlock daily at 8am
+          </Text>
+          <Pressable style={styles.primaryButton} onPress={() => router.back()}>
+            <Text style={styles.primaryButtonText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!lesson) {
     return (
@@ -45,21 +114,59 @@ export default function LessonScreen() {
 
   const allPointsCompleted = completedPoints.size === lesson.quickBreakdown.length;
 
-  const handleNextLesson = () => {
+  const handleNextLesson = async () => {
+    // Mark lesson as completed when moving to next
+    if (allPointsCompleted && user) {
+      setIsCompleting(true);
+      try {
+        const result = await markLessonCompleted(user.id, id as string);
+        if (result) {
+          // Show completion modal with score info
+          setScoreResult(result);
+          setShowCompletionModal(true);
+          // Store where we should navigate after modal
+          if (hasNextLesson) {
+            setPendingNavigation(unlockedLessonIds[currentIndex + 1]);
+          } else {
+            setPendingNavigation('back');
+          }
+          setIsCompleting(false);
+          return; // Don't navigate yet, wait for modal
+        }
+      } catch (error) {
+        console.error('Error marking lesson complete:', error);
+      }
+      setIsCompleting(false);
+    }
+
+    // If no result (already completed or error), navigate directly
     if (hasNextLesson) {
-      const nextLesson = allLessons[currentIndex + 1];
+      const nextLessonId = unlockedLessonIds[currentIndex + 1];
       setCompletedPoints(new Set());
-      router.replace(`/lesson/${nextLesson.id}`);
+      router.replace(`/lesson/${nextLessonId}`);
     } else {
       router.back();
     }
   };
 
+  const handleModalContinue = () => {
+    setShowCompletionModal(false);
+    setScoreResult(null);
+
+    if (pendingNavigation === 'back') {
+      router.back();
+    } else if (pendingNavigation) {
+      setCompletedPoints(new Set());
+      router.replace(`/lesson/${pendingNavigation}`);
+    }
+    setPendingNavigation(null);
+  };
+
   const handlePrevLesson = () => {
     if (hasPrevLesson) {
-      const prevLesson = allLessons[currentIndex - 1];
+      const prevLessonId = unlockedLessonIds[currentIndex - 1];
       setCompletedPoints(new Set());
-      router.replace(`/lesson/${prevLesson.id}`);
+      router.replace(`/lesson/${prevLessonId}`);
     }
   };
 
@@ -146,6 +253,7 @@ export default function LessonScreen() {
                   isCompleted && styles.completeButtonCompleted
                 ]}
                 onPress={() => handleCompletePoint(index)}
+                disabled={wasAlreadyCompleted}
               >
                 <Text style={[
                   styles.completeButtonText,
@@ -178,14 +286,84 @@ export default function LessonScreen() {
         </Pressable>
 
         <Pressable
-          style={[styles.nextButton, allPointsCompleted && styles.nextButtonActive]}
+          style={[
+            styles.nextButton,
+            allPointsCompleted && styles.nextButtonActive,
+            wasAlreadyCompleted && !hasNextLesson && styles.nextButtonCompleted
+          ]}
           onPress={handleNextLesson}
+          disabled={isCompleting || (wasAlreadyCompleted && !hasNextLesson)}
         >
           <Text style={styles.nextButtonText}>
-            {hasNextLesson ? 'Next Lesson →' : 'Complete ✓'}
+            {isCompleting ? 'Saving...' : hasNextLesson ? 'Next Lesson →' : wasAlreadyCompleted ? 'Completed ✓' : 'Complete'}
           </Text>
         </Pressable>
       </View>
+
+      {/* Completion Modal */}
+      <Modal
+        visible={showCompletionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleModalContinue}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {scoreResult && (
+              <>
+                {scoreResult.scoreBand === 'ready' ? (
+                  <>
+                    <Text style={styles.celebrationEmoji}>🎉</Text>
+                    <Text style={styles.modalTitle}>Founder Ready!</Text>
+                    <Text style={styles.modalSubtitle}>
+                      Congratulations! You've reached the top tier.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.celebrationEmoji}>✨</Text>
+                    <Text style={styles.modalTitle}>Lesson Complete!</Text>
+                  </>
+                )}
+
+                <View style={styles.scoreBreakdown}>
+                  <View style={styles.scoreRow}>
+                    <Text style={styles.scoreLabel}>Points Earned</Text>
+                    <Text style={styles.scoreValue}>+{scoreResult.pointsEarned}</Text>
+                  </View>
+
+                  {scoreResult.streakBonus > 0 && (
+                    <View style={styles.scoreRow}>
+                      <Text style={styles.scoreLabel}>Streak Bonus</Text>
+                      <Text style={styles.streakBonusValue}>+{scoreResult.streakBonus}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.scoreRow}>
+                    <Text style={styles.scoreLabel}>Current Score</Text>
+                    <Text style={styles.newScoreValue}>{scoreResult.newScore}/100</Text>
+                  </View>
+
+                  <View style={styles.streakRow}>
+                    <Text style={styles.streakEmoji}>🔥</Text>
+                    <Text style={styles.streakText}>
+                      {scoreResult.currentStreak} day{scoreResult.currentStreak !== 1 ? 's' : ''} streak
+                    </Text>
+                  </View>
+                </View>
+
+                <Pressable style={styles.continueButton} onPress={handleModalContinue}>
+                  <Text style={styles.continueButtonText}>
+                    {pendingNavigation === 'back' ? 'Back to Library' : 'Continue'}
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -194,16 +372,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
+  lockedIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  lockedSubtext: {
+    fontSize: 14,
+    fontFamily: 'HostGrotesk-Regular',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
   errorText: {
     fontSize: 18,
-    fontFamily: 'HostGrotesk-Regular',
-    marginBottom: 20,
+    fontFamily: 'HostGrotesk-SemiBold',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   header: {
     backgroundColor: '#192B47',
@@ -472,6 +666,10 @@ const styles = StyleSheet.create({
   nextButtonActive: {
     backgroundColor: '#192B47',
   },
+  nextButtonCompleted: {
+    backgroundColor: '#10B981',
+    opacity: 0.8,
+  },
   nextButtonText: {
     fontSize: 15,
     fontFamily: 'HostGrotesk-SemiBold',
@@ -487,5 +685,108 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
     color: '#FFFFFF',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  celebrationEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#192B47',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    fontFamily: 'HostGrotesk-Regular',
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  scoreBreakdown: {
+    width: '100%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  scoreLabel: {
+    fontSize: 14,
+    fontFamily: 'HostGrotesk-Regular',
+    color: '#6B7280',
+  },
+  scoreValue: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#10B981',
+  },
+  streakBonusValue: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#F59E0B',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  newScoreValue: {
+    fontSize: 18,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#192B47',
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  streakEmoji: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  streakText: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#F59E0B',
+  },
+  continueButton: {
+    backgroundColor: '#192B47',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    width: '100%',
+  },
+  continueButtonText: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
 });

@@ -1,5 +1,28 @@
 import { TestAnswers, ScoreResult, ScoreBand } from '@/types';
 
+// Score progression constants
+export const POINTS_PER_LESSON = 1;
+export const STREAK_DAYS_FOR_BONUS = 3;
+export const MAX_SCORE = 100;
+
+// Calculate streak bonus (+1 for every 3 consecutive days)
+export function calculateStreakBonus(streakDays: number): number {
+  return Math.floor(streakDays / STREAK_DAYS_FOR_BONUS);
+}
+
+// Calculate total points for a lesson completion
+export function calculateTotalPoints(streakDays: number): number {
+  return POINTS_PER_LESSON + calculateStreakBonus(streakDays);
+}
+
+// Determine score band based on score
+export function getScoreBandFromScore(score: number): ScoreBand {
+  if (score <= 40) return 'early-stage';
+  if (score <= 70) return 'developing';
+  if (score <= 90) return 'strong';
+  return 'ready';
+}
+
 export function calculateScore(answers: TestAnswers): ScoreResult {
   // Sum up points from Q1-Q9
   const totalPoints =

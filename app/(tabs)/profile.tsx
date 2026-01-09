@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, ScrollView, Switch, Linking, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
 import { supabase } from '@/lib/supabase/client';
@@ -15,41 +17,121 @@ const LEARNING_FORMATS = [
   { id: 'conversations', label: 'Conversations', description: 'Interactive discussions' },
 ];
 
+const DELETE_REASONS = [
+  { id: 'not_useful', label: 'Content not useful for me' },
+  { id: 'too_busy', label: 'Too busy to use the app' },
+  { id: 'found_alternative', label: 'Found an alternative' },
+  { id: 'privacy_concerns', label: 'Privacy concerns' },
+  { id: 'technical_issues', label: 'Technical issues' },
+  { id: 'other', label: 'Other reason' },
+];
+
 interface UserProfile {
   first_name: string;
   last_name: string;
   base_score: number;
   score_band: string;
   is_premium: boolean;
+  push_notifications_enabled: boolean;
+  email_notifications_enabled: boolean;
+  current_streak_days: number;
+  longest_streak_days: number;
+  preferred_learning_format: string;
 }
 
 export default function ProfileScreen() {
   const { user, signOut, deleteAccount } = useAuth();
   const { mode, setMode, isDark, colors } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
   const [showLearningFormatModal, setShowLearningFormatModal] = useState(false);
   const [selectedFormats, setSelectedFormats] = useState<string[]>(['lessons', 'stories']);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [updatingSettings, setUpdatingSettings] = useState(false);
+  const [showDeleteReasonModal, setShowDeleteReasonModal] = useState(false);
+  const [selectedDeleteReason, setSelectedDeleteReason] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadProfile();
-    }
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadProfile();
+      }
+    }, [user])
+  );
 
   const loadProfile = async () => {
     if (!user) return;
 
     const { data, error } = await supabase
       .from('users')
-      .select('first_name, last_name, base_score, score_band, is_premium')
+      .select('first_name, last_name, base_score, score_band, is_premium, push_notifications_enabled, email_notifications_enabled, current_streak_days, longest_streak_days, preferred_learning_format')
       .eq('id', user.id)
       .single();
 
     if (data) {
-      setProfile(data);
+      setProfile({
+        ...data,
+        push_notifications_enabled: data.push_notifications_enabled ?? true,
+        email_notifications_enabled: data.email_notifications_enabled ?? true,
+        current_streak_days: data.current_streak_days ?? 0,
+        longest_streak_days: data.longest_streak_days ?? 0,
+        preferred_learning_format: data.preferred_learning_format ?? 'lessons',
+      });
+
+      // Load saved learning formats (stored as comma-separated string)
+      const savedFormats = data.preferred_learning_format?.split(',').filter(Boolean) || ['lessons'];
+      setSelectedFormats(savedFormats);
+    }
+  };
+
+  const handlePushNotificationToggle = async (value: boolean) => {
+    if (!user || !profile || updatingSettings) return;
+
+    // Optimistically update UI
+    setProfile({ ...profile, push_notifications_enabled: value });
+    setUpdatingSettings(true);
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ push_notifications_enabled: value })
+        .eq('id', user.id);
+
+      if (error) {
+        // Revert on error
+        setProfile({ ...profile, push_notifications_enabled: !value });
+        Alert.alert('Error', 'Failed to update notification settings');
+      }
+    } catch (error) {
+      setProfile({ ...profile, push_notifications_enabled: !value });
+      Alert.alert('Error', 'Failed to update notification settings');
+    } finally {
+      setUpdatingSettings(false);
+    }
+  };
+
+  const handleEmailNotificationToggle = async (value: boolean) => {
+    if (!user || !profile || updatingSettings) return;
+
+    // Optimistically update UI
+    setProfile({ ...profile, email_notifications_enabled: value });
+    setUpdatingSettings(true);
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ email_notifications_enabled: value })
+        .eq('id', user.id);
+
+      if (error) {
+        // Revert on error
+        setProfile({ ...profile, email_notifications_enabled: !value });
+        Alert.alert('Error', 'Failed to update notification settings');
+      }
+    } catch (error) {
+      setProfile({ ...profile, email_notifications_enabled: !value });
+      Alert.alert('Error', 'Failed to update notification settings');
+    } finally {
+      setUpdatingSettings(false);
     }
   };
 
@@ -78,57 +160,72 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
+    setSelectedDeleteReason(null);
+    setShowDeleteReasonModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!selectedDeleteReason) {
+      Alert.alert('Please select a reason', 'Please tell us why you want to delete your account.');
+      return;
+    }
+
+    const reasonLabel = DELETE_REASONS.find(r => r.id === selectedDeleteReason)?.label || selectedDeleteReason;
+
     Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.',
+      'Final Confirmation',
+      'This will permanently delete your account. You will not be able to log in again. Are you sure?',
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
+          text: 'Delete Permanently',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Final Confirmation',
-              'This will permanently delete your account and all associated data. This cannot be undone.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete Permanently',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setDeletingAccount(true);
-                    try {
-                      const { error } = await deleteAccount();
-                      if (error) {
-                        Alert.alert('Error', error.message || 'Failed to delete account. Please try again.');
-                      }
-                    } catch (error) {
-                      Alert.alert('Error', 'Something went wrong. Please try again.');
-                    } finally {
-                      setDeletingAccount(false);
-                    }
-                  },
-                },
-              ]
-            );
+          onPress: async () => {
+            setShowDeleteReasonModal(false);
+            setDeletingAccount(true);
+            try {
+              const { error } = await deleteAccount(reasonLabel);
+              if (error) {
+                Alert.alert('Error', error.message || 'Failed to delete account. Please try again.');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Something went wrong. Please try again.');
+            } finally {
+              setDeletingAccount(false);
+            }
           },
         },
       ]
     );
   };
 
-  const toggleLearningFormat = (formatId: string) => {
-    setSelectedFormats((current) => {
-      if (current.includes(formatId)) {
-        // Don't allow deselecting all formats
-        if (current.length === 1) return current;
-        return current.filter((id) => id !== formatId);
+  const toggleLearningFormat = async (formatId: string) => {
+    let newFormats: string[];
+
+    if (selectedFormats.includes(formatId)) {
+      // Don't allow deselecting all formats
+      if (selectedFormats.length === 1) return;
+      newFormats = selectedFormats.filter((id) => id !== formatId);
+    } else {
+      newFormats = [...selectedFormats, formatId];
+    }
+
+    // Optimistically update UI
+    setSelectedFormats(newFormats);
+
+    // Save to database
+    if (user) {
+      const { error } = await supabase
+        .from('users')
+        .update({ preferred_learning_format: newFormats.join(',') })
+        .eq('id', user.id);
+
+      if (error) {
+        // Revert on error
+        setSelectedFormats(selectedFormats);
+        console.error('Error saving learning format:', error);
       }
-      return [...current, formatId];
-    });
+    }
   };
 
   const getSelectedFormatsLabel = () => {
@@ -192,15 +289,44 @@ export default function ProfileScreen() {
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
 
           {profile && (
-            <View style={styles.scoreContainer}>
-              <View style={[styles.scoreBadge, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}>
-                <Text style={[styles.scoreValue, { color: '#192B47' }]}>{profile.base_score}</Text>
-                <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>Founder Score</Text>
+            <View style={styles.statsCard}>
+              {/* Score Section */}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{profile.base_score}</Text>
+                <Text style={styles.statLabel}>Founder Score</Text>
+                <View style={styles.scoreBandPill}>
+                  <Text style={styles.scoreBandText}>
+                    {getScoreBandLabel(profile.score_band as any)}
+                  </Text>
+                </View>
               </View>
-              <View style={[styles.bandBadge, { backgroundColor: '#192B47' }]}>
-                <Text style={[styles.bandText, { color: '#FFFFFF' }]}>
-                  {getScoreBandLabel(profile.score_band as any)}
-                </Text>
+
+              {/* Divider */}
+              <View style={styles.statDivider} />
+
+              {/* Current Streak */}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{profile.current_streak_days}</Text>
+                <Text style={styles.statLabel}>Day Streak</Text>
+                {profile.current_streak_days > 0 && (
+                  <View style={styles.streakActivePill}>
+                    <Text style={styles.streakActiveText}>Active</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Divider */}
+              <View style={styles.statDivider} />
+
+              {/* Best Streak */}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{profile.longest_streak_days}</Text>
+                <Text style={styles.statLabel}>Best Streak</Text>
+                {profile.longest_streak_days > 0 && profile.current_streak_days === profile.longest_streak_days && (
+                  <View style={styles.personalBestPill}>
+                    <Text style={styles.personalBestText}>Personal Best</Text>
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -241,11 +367,12 @@ export default function ProfileScreen() {
             showArrow={false}
             rightElement={
               <Switch
-                value={pushNotifications}
-                onValueChange={setPushNotifications}
+                value={profile?.push_notifications_enabled ?? true}
+                onValueChange={handlePushNotificationToggle}
                 trackColor={{ false: '#D1D5DB', true: '#10B981' }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="#D1D5DB"
+                disabled={updatingSettings}
               />
             }
           />
@@ -256,11 +383,12 @@ export default function ProfileScreen() {
             showArrow={false}
             rightElement={
               <Switch
-                value={emailNotifications}
-                onValueChange={setEmailNotifications}
+                value={profile?.email_notifications_enabled ?? true}
+                onValueChange={handleEmailNotificationToggle}
                 trackColor={{ false: '#D1D5DB', true: '#10B981' }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="#D1D5DB"
+                disabled={updatingSettings}
               />
             }
           />
@@ -298,12 +426,12 @@ export default function ProfileScreen() {
           <SettingRow
             icon="🔐"
             title="Privacy Policy"
-            onPress={() => Linking.openURL('https://foundergroundworks.com/privacy')}
+            onPress={() => WebBrowser.openBrowserAsync('https://foundergroundworks.com/privacy')}
           />
           <SettingRow
             icon="📜"
             title="Terms of Service"
-            onPress={() => Linking.openURL('https://foundergroundworks.com/terms')}
+            onPress={() => WebBrowser.openBrowserAsync('https://foundergroundworks.com/terms')}
           />
           <SettingRow
             icon="🗑️"
@@ -403,6 +531,70 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* Delete Reason Modal */}
+      <Modal
+        visible={showDeleteReasonModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDeleteReasonModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Why are you leaving?</Text>
+              <Pressable onPress={() => setShowDeleteReasonModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.modalSubtitle}>
+              Please help us improve by telling us why you want to delete your account.
+            </Text>
+            <FlatList
+              data={DELETE_REASONS}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[
+                    styles.formatItem,
+                    selectedDeleteReason === item.id && styles.formatItemSelected,
+                  ]}
+                  onPress={() => setSelectedDeleteReason(item.id)}
+                >
+                  <View style={styles.formatInfo}>
+                    <Text
+                      style={[
+                        styles.formatLabel,
+                        selectedDeleteReason === item.id && styles.formatLabelSelected,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      selectedDeleteReason === item.id && styles.checkboxSelected,
+                    ]}
+                  >
+                    {selectedDeleteReason === item.id && (
+                      <Text style={styles.checkboxIcon}>✓</Text>
+                    )}
+                  </View>
+                </Pressable>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+            <Pressable
+              style={[styles.deleteButton, !selectedDeleteReason && styles.deleteButtonDisabled]}
+              onPress={confirmDeleteAccount}
+              disabled={!selectedDeleteReason}
+            >
+              <Text style={styles.deleteButtonText}>Continue</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       {/* Deleting Account Overlay */}
       {deletingAccount && (
         <View style={styles.deletingOverlay}>
@@ -454,43 +646,80 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     marginBottom: 16,
   },
-  scoreContainer: {
+  statsCard: {
     flexDirection: 'row',
-    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 8,
+    marginTop: 8,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statItem: {
+    flex: 1,
     alignItems: 'center',
   },
-  scoreBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  scoreValue: {
-    fontSize: 20,
+  statValue: {
+    fontSize: 32,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
+    color: '#192B47',
+    lineHeight: 38,
   },
-  scoreLabel: {
-    fontSize: 11,
-    fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
-    marginTop: 2,
-  },
-  bandBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  bandText: {
+  statLabel: {
     fontSize: 12,
+    fontFamily: 'HostGrotesk-Medium',
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 8,
+  },
+  scoreBandPill: {
+    backgroundColor: '#192B47',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  scoreBandText: {
+    fontSize: 10,
     fontFamily: 'HostGrotesk-SemiBold',
     color: '#FFFFFF',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  streakActivePill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  streakActiveText: {
+    fontSize: 10,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#16A34A',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  personalBestPill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  personalBestText: {
+    fontSize: 10,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#D97706',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   sectionHeader: {
     fontSize: 13,
@@ -676,6 +905,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonText: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#FFFFFF',
+  },
+  deleteButton: {
+    backgroundColor: '#DC2626',
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  deleteButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  deleteButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
     color: '#FFFFFF',

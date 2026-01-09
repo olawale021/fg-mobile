@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { questions } from '@/lib/questions';
 import { analyzeWeakAreas } from '@/lib/weak-areas';
+import { initializeLessonQueue } from '@/lib/lesson-unlocks';
+import { subscribeToMailchimp } from '@/lib/mailchimp';
 
 export default function UserInfoScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +59,14 @@ export default function UserInfoScreen() {
 
       // User profile is automatically created by database trigger
       // Auth context handles session management
+
+      // Subscribe user to Mailchimp mailing list (non-blocking)
+      subscribeToMailchimp({
+        email: userInfo.email,
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName,
+        location: userInfo.location,
+      });
 
       // Create test_responses record with user_id and analyze weak areas
       if (userId) {
@@ -122,8 +132,11 @@ export default function UserInfoScreen() {
               };
 
               await analyzeWeakAreas(userId, testResponseData.id, answersForAnalysis);
+
+              // Initialize lesson queue and unlock first lesson
+              await initializeLessonQueue(userId);
             } catch (weakAreasError) {
-              console.error('Error analyzing weak areas:', weakAreasError);
+              console.error('Error analyzing weak areas or initializing queue:', weakAreasError);
               // Don't block the user, just log the error
             }
           }

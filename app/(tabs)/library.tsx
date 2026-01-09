@@ -1,50 +1,127 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, StatusBar } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
+import { useAuth } from '@/contexts/auth-context';
 import { getAllLessons, Lesson } from '@/lib/lessons';
+import { getUnlockedLessons } from '@/lib/lesson-unlocks';
+import { supabase } from '@/lib/supabase/client';
 
 export default function LibraryScreen() {
   const { colors, isDark } = useTheme();
-  const allLessons = getAllLessons();
+  const { user } = useAuth();
+  const [unlockedLessons, setUnlockedLessons] = useState<Lesson[]>([]);
+  const [completedSlugs, setCompletedSlugs] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  // Get unique categories
-  const categories = ['All', ...Array.from(new Set(allLessons.map(lesson => lesson.category)))];
+  // Fetch unlocked lessons on focus
+  useFocusEffect(
+    useCallback(() => {
+      async function loadUnlockedLessons() {
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          // Get unlocked lesson slugs
+          const unlockedSlugs = await getUnlockedLessons(user.id);
+
+          // Get completed lesson slugs
+          const { data: completedData } = await supabase
+            .from('user_lesson_completions')
+            .select('content_slug')
+            .eq('user_id', user.id)
+            .eq('status', 'completed');
+
+          const completedSet = new Set(completedData?.map(c => c.content_slug) || []);
+          setCompletedSlugs(completedSet);
+
+          // Filter all lessons to only show unlocked ones
+          const allLessons = getAllLessons();
+          const filtered = allLessons.filter(lesson =>
+            unlockedSlugs.includes(lesson.id)
+          );
+
+          setUnlockedLessons(filtered);
+        } catch (error) {
+          console.error('Error loading unlocked lessons:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      loadUnlockedLessons();
+    }, [user])
+  );
+
+  // Get unique categories from unlocked lessons
+  const categories = ['All', ...Array.from(new Set(unlockedLessons.map(lesson => lesson.category)))];
 
   // Filter lessons based on search and category
-  const filteredLessons = allLessons.filter(lesson => {
+  const filteredLessons = unlockedLessons.filter(lesson => {
     const matchesSearch = lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          lesson.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || lesson.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const LessonCard = ({ lesson }: { lesson: Lesson }) => (
-    <Pressable
-      style={[styles.lessonCard, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}
-      onPress={() => router.push(`/lesson/${lesson.id}`)}
-    >
-      <View style={[styles.lessonBadge, { backgroundColor: '#192B47' }]}>
-        <Text style={[styles.lessonBadgeText, { color: '#FFFFFF' }]}>LESSON</Text>
-      </View>
-
-      <Text style={[styles.lessonCategory, { color: '#6B7280' }]}>{lesson.category}</Text>
-      <Text style={[styles.lessonTitle, { color: '#192B47' }]}>{lesson.title}</Text>
-      <Text style={[styles.lessonDescription, { color: '#6B7280' }]} numberOfLines={2}>
-        {lesson.description}
-      </Text>
-
-      <View style={styles.lessonFooter}>
-        <Text style={[styles.lessonDuration, { color: '#6B7280' }]}>⏱️ {lesson.duration}</Text>
-        <View style={[styles.startButton, { backgroundColor: '#192B47' }]}>
-          <Text style={[styles.startButtonText, { color: '#FFFFFF' }]}>Start →</Text>
+  // Show loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      </View>
-    </Pressable>
-  );
+      </SafeAreaView>
+    );
+  }
+
+  const LessonCard = ({ lesson }: { lesson: Lesson }) => {
+    const isCompleted = completedSlugs.has(lesson.id);
+
+    return (
+      <Pressable
+        style={[
+          styles.lessonCard,
+          { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
+          isCompleted && styles.lessonCardCompleted
+        ]}
+        onPress={() => router.push(`/lesson/${lesson.id}`)}
+      >
+        <View style={styles.badgeRow}>
+          <View style={[styles.lessonBadge, { backgroundColor: '#192B47' }]}>
+            <Text style={[styles.lessonBadgeText, { color: '#FFFFFF' }]}>LESSON</Text>
+          </View>
+          {isCompleted && (
+            <View style={styles.completedBadge}>
+              <Text style={styles.completedBadgeText}>✓ Completed</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={[styles.lessonCategory, { color: '#6B7280' }]}>{lesson.category}</Text>
+        <Text style={[styles.lessonTitle, { color: '#192B47' }]}>{lesson.title}</Text>
+        <Text style={[styles.lessonDescription, { color: '#6B7280' }]} numberOfLines={2}>
+          {lesson.description}
+        </Text>
+
+        <View style={styles.lessonFooter}>
+          <Text style={[styles.lessonDuration, { color: '#6B7280' }]}>⏱️ {lesson.duration}</Text>
+          <View style={[styles.startButton, { backgroundColor: isCompleted ? '#10B981' : '#192B47' }]}>
+            <Text style={[styles.startButtonText, { color: '#FFFFFF' }]}>
+              {isCompleted ? 'Review →' : 'Start →'}
+            </Text>
+          </View>
+        </View>
+      </Pressable>
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -53,7 +130,7 @@ export default function LibraryScreen() {
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Library</Text>
         <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-          {filteredLessons.length} {filteredLessons.length === 1 ? 'lesson' : 'lessons'} available
+          {unlockedLessons.length} {unlockedLessons.length === 1 ? 'lesson' : 'lessons'} unlocked
         </Text>
       </View>
 
@@ -143,6 +220,11 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     paddingHorizontal: 20,
@@ -238,13 +320,32 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
   },
+  lessonCardCompleted: {
+    borderColor: '#10B981',
+    borderWidth: 2,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  completedBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  completedBadgeText: {
+    fontSize: 11,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#FFFFFF',
+  },
   lessonBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
   },
   lessonBadgeText: {
     fontSize: 10,
