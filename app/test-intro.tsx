@@ -1,6 +1,8 @@
-import { View, Text, StyleSheet, Pressable, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Pressable, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+
+const reportCardIcon = require('../assets/images/report-card.png');
 
 export default function TestIntroScreen() {
   return (
@@ -8,19 +10,19 @@ export default function TestIntroScreen() {
       <StatusBar barStyle="light-content" />
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>📋</Text>
+          <Image source={reportCardIcon} style={styles.icon} />
         </View>
 
         <Text style={styles.title}>Quick Assessment</Text>
 
         <Text style={styles.description}>
-          We'll ask you 10 quick questions to understand where you are in your founder journey.
+          We'll ask you 9 quick questions to understand where you are in your founder journey.
           This helps us personalize your learning experience.
         </Text>
 
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>What to expect:</Text>
-          <Text style={styles.infoItem}>• 10 questions about your startup</Text>
+          <Text style={styles.infoItem}>• 9 questions about your startup</Text>
           <Text style={styles.infoItem}>• Takes about 2-3 minutes</Text>
           <Text style={styles.infoItem}>• No right or wrong answers</Text>
           <Text style={styles.infoItem}>• Get your founder readiness score</Text>
@@ -67,7 +69,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   icon: {
-    fontSize: 40,
+    width: 48,
+    height: 48,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 32,

@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, ActivityIndicator, Modal, Animated } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, ActivityIndicator, Modal, Animated, Image } from 'react-native';
+
+const checkmarkIcon = require('../../assets/images/checkmark.png');
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
 import { useAuth } from '@/contexts/auth-context';
 import { getLessonById, getAllLessons } from '@/lib/lessons';
-import { isLessonUnlocked, getUnlockedLessons, markLessonCompleted, isLessonCompleted, ScoreProgressionResult } from '@/lib/lesson-unlocks';
+import { isLessonUnlocked, getUnlockedLessons, markLessonCompleted, isLessonCompleted, ScoreProgressionResult, saveLessonTime, incrementLessonReadCount } from '@/lib/lesson-unlocks';
+import { useScreenTimeTracker } from '@/hooks/use-screen-time-tracker';
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
@@ -21,6 +24,21 @@ export default function LessonScreen() {
   const [scoreResult, setScoreResult] = useState<ScoreProgressionResult | null>(null);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [wasAlreadyCompleted, setWasAlreadyCompleted] = useState(false);
+  const [hasIncrementedReadCount, setHasIncrementedReadCount] = useState(false);
+
+  // Screen time tracking
+  const handleSaveTime = useCallback(async (timeSeconds: number) => {
+    if (user?.id) {
+      await saveLessonTime(user.id, id as string, timeSeconds);
+    }
+  }, [user?.id, id]);
+
+  const { forceSave } = useScreenTimeTracker({
+    userId: user?.id,
+    contentSlug: id as string,
+    saveIntervalMs: 30000,
+    onSave: handleSaveTime,
+  });
 
   // Check if lesson is unlocked and completed
   useEffect(() => {
@@ -49,6 +67,14 @@ export default function LessonScreen() {
     }
     checkAccess();
   }, [user, id, lesson]);
+
+  // Increment read count once when revisiting a completed lesson
+  useEffect(() => {
+    if (wasAlreadyCompleted && user && !hasIncrementedReadCount) {
+      setHasIncrementedReadCount(true);
+      incrementLessonReadCount(user.id, id as string);
+    }
+  }, [wasAlreadyCompleted, user, id, hasIncrementedReadCount]);
 
   // Calculate navigation based on unlocked lessons
   const currentIndex = unlockedLessonIds.indexOf(id as string);
@@ -115,6 +141,9 @@ export default function LessonScreen() {
   const allPointsCompleted = completedPoints.size === lesson.quickBreakdown.length;
 
   const handleNextLesson = async () => {
+    // Save accumulated screen time before leaving
+    await forceSave();
+
     // Mark lesson as completed when moving to next
     if (allPointsCompleted && user) {
       setIsCompleting(true);
@@ -162,7 +191,10 @@ export default function LessonScreen() {
     setPendingNavigation(null);
   };
 
-  const handlePrevLesson = () => {
+  const handlePrevLesson = async () => {
+    // Save accumulated screen time before leaving
+    await forceSave();
+
     if (hasPrevLesson) {
       const prevLessonId = unlockedLessonIds[currentIndex - 1];
       setCompletedPoints(new Set());
@@ -176,7 +208,7 @@ export default function LessonScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={async () => { await forceSave(); router.back(); }} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </Pressable>
         <View style={styles.headerInfo}>
@@ -321,8 +353,8 @@ export default function LessonScreen() {
                   </>
                 ) : (
                   <>
-                    <Text style={styles.celebrationEmoji}>✨</Text>
-                    <Text style={styles.modalTitle}>Lesson Complete!</Text>
+                    <Image source={checkmarkIcon} style={styles.checkmarkIcon} />
+                    <Text style={styles.modalTitle}>Lesson Completed!</Text>
                   </>
                 )}
 
@@ -704,6 +736,12 @@ const styles = StyleSheet.create({
   },
   celebrationEmoji: {
     fontSize: 48,
+    marginBottom: 16,
+  },
+  checkmarkIcon: {
+    width: 64,
+    height: 64,
+    resizeMode: 'contain',
     marginBottom: 16,
   },
   modalTitle: {

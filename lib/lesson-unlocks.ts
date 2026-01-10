@@ -426,3 +426,58 @@ export async function checkAndUnlockIfEligible(userId: string): Promise<void> {
     console.error('Error in checkAndUnlockIfEligible:', error);
   }
 }
+
+/**
+ * Save accumulated screen time for a lesson
+ * Accumulates time if record already exists
+ */
+export async function saveLessonTime(
+  userId: string,
+  contentSlug: string,
+  timeSeconds: number
+): Promise<void> {
+  if (timeSeconds <= 0) return;
+
+  try {
+    const { error } = await supabase.rpc('save_lesson_time', {
+      p_user_id: userId,
+      p_content_slug: contentSlug,
+      p_time_seconds: timeSeconds,
+    });
+
+    if (error) {
+      console.error('Error saving lesson time:', error);
+      throw error;
+    }
+
+    console.log(`Saved ${timeSeconds}s for lesson ${contentSlug}`);
+  } catch (error) {
+    console.error('Error in saveLessonTime:', error);
+    throw error;
+  }
+}
+
+/**
+ * Increment read count when revisiting a completed lesson
+ */
+export async function incrementLessonReadCount(
+  userId: string,
+  contentSlug: string
+): Promise<void> {
+  try {
+    const { error } = await supabase.rpc('increment_lesson_read_count', {
+      p_user_id: userId,
+      p_content_slug: contentSlug,
+    });
+
+    if (error) {
+      console.error('Error incrementing read count:', error);
+      throw error;
+    }
+
+    console.log(`Incremented read count for lesson ${contentSlug}`);
+  } catch (error) {
+    console.error('Error in incrementLessonReadCount:', error);
+    throw error;
+  }
+}

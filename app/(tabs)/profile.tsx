@@ -31,6 +31,8 @@ interface UserProfile {
   last_name: string;
   base_score: number;
   score_band: string;
+  latest_score: number | null;
+  latest_score_band: string | null;
   is_premium: boolean;
   push_notifications_enabled: boolean;
   email_notifications_enabled: boolean;
@@ -63,13 +65,15 @@ export default function ProfileScreen() {
 
     const { data, error } = await supabase
       .from('users')
-      .select('first_name, last_name, base_score, score_band, is_premium, push_notifications_enabled, email_notifications_enabled, current_streak_days, longest_streak_days, preferred_learning_format')
+      .select('first_name, last_name, base_score, score_band, latest_score, latest_score_band, is_premium, push_notifications_enabled, email_notifications_enabled, current_streak_days, longest_streak_days, preferred_learning_format')
       .eq('id', user.id)
       .single();
 
     if (data) {
       setProfile({
         ...data,
+        latest_score: data.latest_score ?? null,
+        latest_score_band: data.latest_score_band ?? null,
         push_notifications_enabled: data.push_notifications_enabled ?? true,
         email_notifications_enabled: data.email_notifications_enabled ?? true,
         current_streak_days: data.current_streak_days ?? 0,
@@ -290,13 +294,13 @@ export default function ProfileScreen() {
 
           {profile && (
             <View style={styles.statsCard}>
-              {/* Score Section */}
+              {/* Score Section - latest_score is current total (assessment + lessons + streaks) */}
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{profile.base_score}</Text>
+                <Text style={styles.statValue}>{profile.latest_score ?? profile.base_score}</Text>
                 <Text style={styles.statLabel}>Founder Score</Text>
                 <View style={styles.scoreBandPill}>
                   <Text style={styles.scoreBandText}>
-                    {getScoreBandLabel(profile.score_band as any)}
+                    {getScoreBandLabel((profile.latest_score_band ?? profile.score_band) as any)}
                   </Text>
                 </View>
               </View>

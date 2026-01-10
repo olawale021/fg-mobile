@@ -5,8 +5,7 @@ import { router } from 'expo-router';
 import UserInfoForm from '@/components/user-info-form';
 import { useTestStore } from '@/store/test-store';
 import { useResultsStore } from '@/store/results-store';
-import { calculateScore } from '@/lib/scoring';
-import { UserInfo, TestAnswers } from '@/types';
+import { UserInfo } from '@/types';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { questions } from '@/lib/questions';
@@ -17,18 +16,19 @@ import { subscribeToMailchimp } from '@/lib/mailchimp';
 export default function UserInfoScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { answers, resetTest } = useTestStore();
-  const { setScoreResult } = useResultsStore();
+  const { scoreResult } = useResultsStore();
   const { signUp } = useAuth();
 
   const handleSubmit = async (userInfo: UserInfo) => {
     setIsSubmitting(true);
 
     try {
-      // Calculate score from test answers
-      const scoreResult = calculateScore(answers as TestAnswers);
-
-      // Store score in results store for immediate access
-      setScoreResult(scoreResult);
+      // Score is already calculated in test screen - safety check
+      if (!scoreResult || scoreResult.baseScore >= 87) {
+        setIsSubmitting(false);
+        router.replace('/results');
+        return;
+      }
 
       // Create user account using auth context
       const { error, requiresEmailConfirmation, email, userId } = await signUp(userInfo.email, userInfo.password, {

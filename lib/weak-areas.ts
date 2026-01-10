@@ -59,12 +59,11 @@ export async function analyzeWeakAreas(
   answers: Record<string, string>
 ) {
   try {
-    // Clear existing weak areas for this test response
+    // Clear ALL existing weak areas for this user (retake replaces previous analysis)
     await supabase
       .from('weak_areas')
       .delete()
-      .eq('user_id', userId)
-      .eq('test_response_id', testResponseId);
+      .eq('user_id', userId);
 
     // Get categories
     const categories = await getCategories();

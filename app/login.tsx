@@ -11,7 +11,10 @@ import {
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  Image,
 } from 'react-native';
+
+const logo = require('../assets/logos/mobile_icom.png');
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
@@ -57,6 +60,7 @@ export default function LoginScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
+            <Image source={logo} style={styles.logo} />
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue your journey</Text>
           </View>
@@ -156,6 +160,12 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 32,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,

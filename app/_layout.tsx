@@ -84,6 +84,7 @@ export default function RootLayout() {
               <Stack.Screen name="lesson/[id]" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
               <Stack.Screen name="change-password" options={{ headerShown: false }} />
+              <Stack.Screen name="assessment-details" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>

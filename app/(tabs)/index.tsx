@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, StatusBar, Image } from 'react-native';
+
+const waveIcon = require('../../assets/images/wave.png');
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '@/lib/supabase/client';
@@ -16,6 +18,8 @@ interface UserProfile {
   last_name: string;
   base_score: number;
   score_band: string;
+  latest_score: number | null;
+  latest_score_band: string | null;
   total_content_completed: number;
   total_learning_minutes: number;
   is_premium: boolean;
@@ -124,7 +128,10 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: colors.text }]}>Hello, {userProfile.first_name}! 👋</Text>
+            <View style={styles.greetingRow}>
+              <Text style={[styles.greeting, { color: colors.text }]}>Hello, {userProfile.first_name}! </Text>
+              <Image source={waveIcon} style={styles.waveIcon} />
+            </View>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Welcome to your dashboard</Text>
           </View>
         </View>
@@ -135,12 +142,14 @@ export default function DashboardScreen() {
             <Text style={[styles.scoreTitle, { color: '#192B47' }]}>Your Founder Score</Text>
             <View style={[styles.scoreBadge, { backgroundColor: '#192B47' }]}>
               <Text style={[styles.scoreBadgeText, { color: '#FFFFFF' }]}>
-                {getScoreBandLabel(userProfile.score_band as any)}
+                {getScoreBandLabel((userProfile.latest_score_band ?? userProfile.score_band) as any)}
               </Text>
             </View>
           </View>
-          <Text style={[styles.scoreValue, { color: '#192B47' }]}>{userProfile.base_score}</Text>
-          <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>out of 100</Text>
+          <View style={styles.scoreRow}>
+            <Text style={[styles.scoreValue, { color: '#192B47' }]}>{userProfile.latest_score ?? userProfile.base_score}</Text>
+            <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>/100</Text>
+          </View>
 
           {/* Streak Display */}
           {userProfile.current_streak_days > 0 && (
@@ -151,7 +160,7 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          <Pressable style={[styles.viewDetailsButton, { backgroundColor: '#192B47' }]}>
+          <Pressable style={[styles.viewDetailsButton, { backgroundColor: '#192B47' }]} onPress={() => router.push('/assessment-details')}>
             <Text style={[styles.viewDetailsText, { color: '#FFFFFF' }]}>View Details</Text>
           </Pressable>
         </View>
@@ -297,10 +306,20 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   greeting: {
     fontSize: 32,
     fontFamily: 'HostGrotesk-Bold',
     color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  waveIcon: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
     marginBottom: 4,
   },
   subtitle: {
@@ -340,17 +359,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textTransform: 'uppercase',
   },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
   scoreValue: {
     fontSize: 44,
     fontFamily: 'HostGrotesk-Bold',
     color: '#FFFFFF',
-    marginBottom: 2,
+    lineHeight: 48,
   },
   scoreLabel: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-Regular',
     color: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: 12,
+    marginLeft: 4,
+    marginTop: 8,
   },
   streakContainer: {
     flexDirection: 'row',
