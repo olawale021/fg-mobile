@@ -231,7 +231,7 @@ export default function TestQuestionScreen() {
           disabled={!canProceed || isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#192B47" />
+            <ActivityIndicator size="small" color="#01B2FE" />
           ) : (
             <Text style={styles.nextButtonText}>
               {currentQuestionIndex === questions.length - 1 ? 'Continue' : 'Next'}
@@ -246,7 +246,7 @@ export default function TestQuestionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   content: {
     flex: 1,
@@ -288,6 +288,6 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
 });

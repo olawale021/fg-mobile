@@ -43,8 +43,13 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
   // Get Expo push token
   try {
+    const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
+    if (!projectId) {
+      console.error('Missing EXPO_PUBLIC_PROJECT_ID — push token registration skipped');
+      return null;
+    }
     const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+      projectId,
     });
     return tokenData.data;
   } catch (error) {
@@ -93,7 +98,7 @@ export async function configureAndroidChannel(): Promise<void> {
       name: 'Daily Lessons',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#192B47',
+      lightColor: '#01B2FE',
       sound: 'default',
     });
   }

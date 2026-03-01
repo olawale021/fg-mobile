@@ -82,11 +82,11 @@ export default function ResultsScreen() {
             </View>
             <View style={[
               styles.changeContainer,
-              { backgroundColor: scoreChange > 0 ? 'rgba(16, 185, 129, 0.2)' : scoreChange < 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)' }
+              { backgroundColor: scoreChange > 0 ? 'rgba(255, 122, 26, 0.2)' : scoreChange < 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.1)' }
             ]}>
               <Text style={[
                 styles.changeText,
-                { color: scoreChange > 0 ? '#10B981' : scoreChange < 0 ? '#EF4444' : '#FFFFFF' }
+                { color: scoreChange > 0 ? '#FF7A1A' : scoreChange < 0 ? '#EF4444' : '#FFFFFF' }
               ]}>
                 {scoreChange > 0 ? `+${scoreChange} points improvement!` :
                  scoreChange < 0 ? `${scoreChange} points` : 'Same score'}
@@ -153,7 +153,7 @@ export default function ResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   scrollView: {
     flex: 1,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   comparisonCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

@@ -6,8 +6,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
+import { useSubscription } from '@/contexts/subscription-context';
+import { PaywallModal } from '@/components/paywall-modal';
 import { supabase } from '@/lib/supabase/client';
 import { getScoreBandLabel } from '@/lib/scoring';
+import { scheduleTestNotification, registerForPushNotifications, savePushToken } from '@/lib/push-notifications';
 
 const LEARNING_FORMATS = [
   { id: 'lessons', label: 'Lessons', description: 'Structured learning content' },
@@ -43,7 +46,9 @@ interface UserProfile {
 
 export default function ProfileScreen() {
   const { user, signOut, deleteAccount } = useAuth();
-  const { mode, setMode, isDark, colors } = useTheme();
+  const { colors } = useTheme();
+  const { isPremium } = useSubscription();
+  const [showPaywall, setShowPaywall] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showLearningFormatModal, setShowLearningFormatModal] = useState(false);
   const [selectedFormats, setSelectedFormats] = useState<string[]>(['lessons', 'stories']);
@@ -110,6 +115,30 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'Failed to update notification settings');
     } finally {
       setUpdatingSettings(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      await scheduleTestNotification();
+      Alert.alert('Test Sent', 'You should receive a notification in 5 seconds');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send test notification');
+    }
+  };
+
+  const handleRefreshPushToken = async () => {
+    if (!user) return;
+    try {
+      const token = await registerForPushNotifications();
+      if (token) {
+        await savePushToken(user.id, token);
+        Alert.alert('Token Refreshed', `New token saved:\n${token}`);
+      } else {
+        Alert.alert('Error', 'Could not get push token. Check notification permissions.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to refresh push token');
     }
   };
 
@@ -264,7 +293,7 @@ export default function ProfileScreen() {
       <View style={styles.settingLeft}>
         <Text style={styles.settingIcon}>{icon}</Text>
         <View style={styles.settingText}>
-          <Text style={[styles.settingTitle, { color: '#192B47' }]}>{title}</Text>
+          <Text style={[styles.settingTitle, { color: '#111827' }]}>{title}</Text>
           {subtitle && <Text style={[styles.settingSubtitle, { color: '#6B7280' }]}>{subtitle}</Text>}
         </View>
       </View>
@@ -273,7 +302,7 @@ export default function ProfileScreen() {
   );
 
   const SectionHeader = ({ title }: { title: string }) => (
-    <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>{title}</Text>
+    <Text style={[styles.sectionHeader, { color: '#FFFFFF' }]}>{title}</Text>
   );
 
   return (
@@ -282,15 +311,15 @@ export default function ProfileScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.header}>
-          <View style={[styles.avatarContainer, { backgroundColor: isDark ? '#FFFFFF' : colors.primary }]}>
-            <Text style={[styles.avatarText, { color: isDark ? colors.primary : '#FFFFFF' }]}>
+          <View style={[styles.avatarContainer, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: '#FFFFFF' }]}>
               {profile ? `${profile.first_name[0]}${profile.last_name[0]}` : 'U'}
             </Text>
           </View>
-          <Text style={[styles.userName, { color: colors.text }]}>
+          <Text style={[styles.userName, { color: '#FFFFFF' }]}>
             {profile ? `${profile.first_name} ${profile.last_name}` : 'User'}
           </Text>
-          <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email}</Text>
+          <Text style={[styles.userEmail, { color: '#FFFFFF' }]}>{user?.email}</Text>
 
           {profile && (
             <View style={styles.statsCard}>
@@ -351,12 +380,24 @@ export default function ProfileScreen() {
             subtitle="Update your password"
             onPress={() => router.push('/change-password')}
           />
-          {profile && !profile.is_premium && (
+          {isPremium ? (
+            <SettingRow
+              icon="⭐"
+              title="Podium Pro"
+              subtitle="You have full access"
+              showArrow={false}
+              rightElement={
+                <View style={{ backgroundColor: '#FF7A1A', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'HostGrotesk-SemiBold', color: '#FFFFFF' }}>PRO</Text>
+                </View>
+              }
+            />
+          ) : (
             <SettingRow
               icon="⭐"
               title="Upgrade to Premium"
               subtitle="Unlock all content and features"
-              onPress={() => Alert.alert('Premium', 'Premium features coming soon!')}
+              onPress={() => setShowPaywall(true)}
             />
           )}
         </View>
@@ -373,7 +414,7 @@ export default function ProfileScreen() {
               <Switch
                 value={profile?.push_notifications_enabled ?? true}
                 onValueChange={handlePushNotificationToggle}
-                trackColor={{ false: '#D1D5DB', true: '#10B981' }}
+                trackColor={{ false: '#D1D5DB', true: '#FF7A1A' }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="#D1D5DB"
                 disabled={updatingSettings}
@@ -389,33 +430,30 @@ export default function ProfileScreen() {
               <Switch
                 value={profile?.email_notifications_enabled ?? true}
                 onValueChange={handleEmailNotificationToggle}
-                trackColor={{ false: '#D1D5DB', true: '#10B981' }}
+                trackColor={{ false: '#D1D5DB', true: '#FF7A1A' }}
                 thumbColor="#FFFFFF"
                 ios_backgroundColor="#D1D5DB"
                 disabled={updatingSettings}
               />
             }
           />
+          <SettingRow
+            icon="🧪"
+            title="Test Notification"
+            subtitle="Send a test notification in 5 seconds"
+            onPress={handleTestNotification}
+          />
+          <SettingRow
+            icon="🔄"
+            title="Refresh Push Token"
+            subtitle="Get a fresh token for push notifications"
+            onPress={handleRefreshPushToken}
+          />
         </View>
 
         {/* App Preferences */}
         <SectionHeader title="Preferences" />
         <View style={[styles.section, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}>
-          <SettingRow
-            icon="🌙"
-            title="Dark Mode"
-            subtitle={mode === 'system' ? 'System default' : mode === 'dark' ? 'On' : 'Off'}
-            showArrow={false}
-            rightElement={
-              <Switch
-                value={isDark}
-                onValueChange={(value) => setMode(value ? 'dark' : 'light')}
-                trackColor={{ false: '#D1D5DB', true: '#6366F1' }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor="#D1D5DB"
-              />
-            }
-          />
           <SettingRow
             icon="📚"
             title="Learning Format"
@@ -461,13 +499,13 @@ export default function ProfileScreen() {
         </View>
 
         {/* Sign Out Button */}
-        <Pressable style={[styles.signOutButton, { backgroundColor: isDark ? 'rgba(220, 38, 38, 0.2)' : '#DC2626', borderColor: isDark ? 'rgba(220, 38, 38, 0.5)' : '#DC2626' }]} onPress={handleSignOut}>
+        <Pressable style={[styles.signOutButton, { backgroundColor: '#DC2626', borderColor: '#DC2626' }]} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.text }]}>Founder Groundworks</Text>
-          <Text style={[styles.footerSubtext, { color: colors.textSecondary }]}>Empowering founders to succeed</Text>
+          <Text style={[styles.footerText, { color: '#FFFFFF' }]}>Podium</Text>
+          <Text style={[styles.footerSubtext, { color: '#FFFFFF' }]}>Empowering founders to succeed</Text>
         </View>
       </ScrollView>
 
@@ -599,6 +637,9 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* Paywall Modal */}
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+
       {/* Deleting Account Overlay */}
       {deletingAccount && (
         <View style={styles.deletingOverlay}>
@@ -627,7 +668,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -635,19 +675,15 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
   },
   userName: {
     fontSize: 24,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
     marginBottom: 16,
   },
   statsCard: {
@@ -663,6 +699,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   statItem: {
     flex: 1,
@@ -671,7 +709,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 32,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
     lineHeight: 38,
   },
   statLabel: {
@@ -687,7 +725,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   scoreBandPill: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -700,7 +738,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   streakActivePill: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: '#FFF0E5',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -708,7 +746,7 @@ const styles = StyleSheet.create({
   streakActiveText: {
     fontSize: 10,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#16A34A',
+    color: '#FF7A1A',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -728,17 +766,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 13,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
-    opacity: 0.7,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
   section: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 24,
@@ -751,7 +785,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   settingLeft: {
     flexDirection: 'row',
@@ -768,28 +801,21 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-Medium',
-    color: '#FFFFFF',
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 13,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.7,
   },
   settingArrow: {
     fontSize: 24,
-    color: '#FFFFFF',
-    opacity: 0.5,
   },
   signOutButton: {
-    backgroundColor: 'rgba(220, 38, 38, 0.2)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(220, 38, 38, 0.5)',
     paddingVertical: 14,
     marginHorizontal: 16,
     borderRadius: 8,
     marginBottom: 24,
+    borderWidth: 1.5,
   },
   signOutText: {
     fontSize: 16,
@@ -805,14 +831,11 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   footerSubtext: {
     fontSize: 12,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.7,
   },
   modalOverlay: {
     flex: 1,
@@ -837,7 +860,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
   },
   modalClose: {
     fontSize: 20,
@@ -861,7 +884,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F3F4F6',
   },
   formatItemSelected: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#E0F4FF',
   },
   formatInfo: {
     flex: 1,
@@ -873,7 +896,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   formatLabelSelected: {
-    color: '#192B47',
+    color: '#01B2FE',
     fontFamily: 'HostGrotesk-SemiBold',
   },
   formatDescription: {
@@ -892,8 +915,8 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   checkboxSelected: {
-    backgroundColor: '#192B47',
-    borderColor: '#192B47',
+    backgroundColor: '#01B2FE',
+    borderColor: '#01B2FE',
   },
   checkboxIcon: {
     fontSize: 14,
@@ -901,7 +924,7 @@ const styles = StyleSheet.create({
     fontFamily: 'HostGrotesk-Bold',
   },
   modalButton: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     marginHorizontal: 20,
     marginTop: 16,
     paddingVertical: 14,

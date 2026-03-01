@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a React Native mobile application built with Expo and TypeScript. The app uses Expo Router for navigation and implements a comprehensive theme system for light/dark mode support.
+This is a React Native mobile application built with Expo and TypeScript. The app uses Expo Router for navigation and a light-only theme system (no dark mode).
 
 ## Development Commands
 
@@ -40,29 +40,30 @@ npm run reset-project
 ### Theme System
 
 - **Theme Provider**: `contexts/theme-context.tsx`
-- **Theme Modes**: 'light' | 'dark' | 'system'
-- **Persistence**: Theme preference saved to AsyncStorage
-- **Colors**: Comprehensive color palette with light/dark variants
+- **Light only**: No dark mode. Single color palette, no AsyncStorage persistence.
+- **Brand colors**: Blue `#01B2FE` (primary), Orange `#FF7A1A` (accent)
+- `useTheme()` returns `{ colors }` only (no `isDark`, no `mode`, no `setMode`)
 
 #### Theme Color Variables
 
 ```typescript
 interface ThemeColors {
-  primary: string;           // Brand color: #192B47
-  background: string;        // Screen background
-  card: string;             // Card backgrounds
-  cardBorder: string;       // Card borders
-  text: string;             // Primary text
-  textSecondary: string;    // Secondary text
-  buttonPrimary: string;    // Primary buttons
-  buttonPrimaryText: string;
-  buttonSecondary: string;  // Secondary buttons
-  buttonSecondaryText: string;
-  border: string;
+  primary: string;           // Brand blue: #01B2FE
+  accent: string;            // Brand orange: #FF7A1A
+  background: string;        // Screen background: #FFFFFF
+  card: string;             // Card backgrounds: #FFFFFF
+  cardBorder: string;       // Card borders: #E5E7EB
+  text: string;             // Primary text: #111827
+  textSecondary: string;    // Secondary text: #6B7280
+  buttonPrimary: string;    // Primary buttons: #01B2FE
+  buttonPrimaryText: string; // #FFFFFF
+  buttonSecondary: string;  // Secondary buttons: #F3F4F6
+  buttonSecondaryText: string; // #111827
+  border: string;           // #E5E7EB
   success: string;          // #10B981
-  error: string;            // #DC2626
-  inputBackground: string;
-  inputBorder: string;
+  error: string;            // #EF4444
+  inputBackground: string;  // #FFFFFF
+  inputBorder: string;      // #D1D5DB
 }
 ```
 
@@ -138,19 +139,19 @@ const styles = StyleSheet.create({
 
 Every screen MUST include proper StatusBar configuration:
 
+- **White background screens**: `barStyle="dark-content"`
+- **Blue background screens** (hero/onboarding): `barStyle="light-content"`
+
 ```typescript
 import { StatusBar } from 'react-native';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function Screen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       {/* Screen content */}
     </SafeAreaView>
   );
@@ -212,11 +213,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/theme-context';
 
 export default function ScreenName() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       {/* Screen content */}
 
@@ -313,7 +314,7 @@ All screens must be added to the Stack navigator with `headerShown: false`:
 
 1. **Never hardcode colors** - Always use theme colors
 2. **Never use system fonts** - Always use Host Grotesk
-3. **Always configure StatusBar** - Match theme mode
+3. **Always configure StatusBar** - Use `dark-content` for white bg, `light-content` for blue bg
 4. **Use SafeAreaView** - For proper device spacing
 5. **Handle loading states** - Show ActivityIndicator
 6. **Handle error states** - Show error messages
@@ -327,7 +328,7 @@ All screens must be added to the Stack navigator with `headerShown: false`:
 if (loading) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
@@ -341,7 +342,7 @@ if (loading) {
 if (error) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.errorContainer}>
         <Text style={[styles.errorText, { color: colors.text }]}>
           {error.message}

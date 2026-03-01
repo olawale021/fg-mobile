@@ -42,7 +42,7 @@ export default function AuthCallback() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#192B47" />
+      <ActivityIndicator size="large" color="#01B2FE" />
       <Text style={styles.text}>Verifying your email...</Text>
     </View>
   );

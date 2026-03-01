@@ -10,8 +10,25 @@ import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { questions } from '@/lib/questions';
 import { analyzeWeakAreas } from '@/lib/weak-areas';
-import { initializeLessonQueue } from '@/lib/lesson-unlocks';
 import { subscribeToMailchimp } from '@/lib/mailchimp';
+
+/**
+ * Poll until the user profile exists in public.users (created by DB trigger after auth.signUp).
+ * Returns true once found, false if it times out.
+ */
+async function waitForUserProfile(userId: string, maxAttempts = 10, delayMs = 500): Promise<boolean> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const { data } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (data) return true;
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  return false;
+}
 
 export default function UserInfoScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,7 +75,13 @@ export default function UserInfoScreen() {
       }
 
       // User profile is automatically created by database trigger
-      // Auth context handles session management
+      // Wait for the trigger to finish before proceeding
+      if (userId) {
+        const profileReady = await waitForUserProfile(userId);
+        if (!profileReady) {
+          console.warn('User profile not found after waiting — proceeding anyway');
+        }
+      }
 
       // Subscribe user to Mailchimp mailing list (non-blocking)
       subscribeToMailchimp({
@@ -133,8 +156,24 @@ export default function UserInfoScreen() {
 
               await analyzeWeakAreas(userId, testResponseData.id, answersForAnalysis);
 
-              // Initialize lesson queue and unlock first lesson
-              await initializeLessonQueue(userId);
+              // Generate first AI lesson and unlock it
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.access_token) {
+                const genResponse = await fetch(
+                  `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/generate-first-lesson`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({}),
+                  }
+                );
+                if (!genResponse.ok) {
+                  console.error('Error generating first lesson:', await genResponse.text());
+                }
+              }
             } catch (weakAreasError) {
               console.error('Error analyzing weak areas or initializing queue:', weakAreasError);
               // Don't block the user, just log the error
@@ -174,6 +213,6 @@ export default function UserInfoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
 });

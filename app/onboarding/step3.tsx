@@ -9,7 +9,7 @@ export default function OnboardingScreen3() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
       {/* Image - top 60% */}
       <Image
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   content: {
     height: '50%',
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingHorizontal: 32,
     paddingTop: 24,
     paddingBottom: 24,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: '#192B47',
+    color: '#01B2FE',
     fontSize: 18,
     fontFamily: 'HostGrotesk-SemiBold',
   },

@@ -1,45 +1,66 @@
 {
   "expo": {
-    "name": "FG Mobile",
-    "slug": "fg-mobile",
+    "name": "Podium",
+    "slug": "podium",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logos/mobile_icom.png",
-    "scheme": "fgmobile",
+    "icon": "./assets/logos/Podium_logo.png",
+    "scheme": "podium",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.foundergroundworks.fgmobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Podium needs access to your photo library so you can choose an existing photo to use as your profile picture. Your photos are never shared or uploaded without your permission.",
+        "NSMicrophoneUsageDescription": "Podium uses the microphone to capture your voice when you ask questions about lessons using the voice input feature. Audio is processed for speech-to-text only and is not stored.",
+        "NSSpeechRecognitionUsageDescription": "Podium uses speech recognition to convert your spoken questions into text when using the voice input feature during lessons. This helps you interact with lesson content hands-free.",
+        "NSCameraUsageDescription": "Podium needs access to your camera so you can take a new photo to use as your profile picture. Photos are only used for your profile and are not shared publicly.",
+        "NSUserTrackingUsageDescription": "Podium uses tracking to understand how you interact with the app so we can personalize your learning experience and improve lesson recommendations based on your progress."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#192B47",
-        "foregroundImage": "./assets/logos/mobile_icom.png"
+        "backgroundColor": "#01B2FE",
+        "foregroundImage": "./assets/logos/Podium_logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.foundergroundworks.fgmobile"
+      "package": "com.foundergroundworks.fgmobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/logos/mobile_icom.png"
+      "favicon": "./assets/logos/Podium_logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logos/FounderGroundworksLogoBlueBG.png",
+          "image": "./assets/logos/Podium_Mark_TranspBG.png",
           "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#192B47"
+          "backgroundColor": "#01B2FE"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ],
+      [
+        "@jamsch/expo-speech-recognition",
+        {
+          "microphonePermission": "Podium uses the microphone to capture your voice when you ask questions about lessons using the voice input feature. Audio is processed for speech-to-text only and is not stored.",
+          "speechRecognitionPermission": "Podium uses speech recognition to convert your spoken questions into text when using the voice input feature during lessons. This helps you interact with lesson content hands-free."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -48,7 +69,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e913cc53-66f0-4eb0-992f-c60107bef9d8"
+        "projectId": "1141dd5e-dc4a-4174-a8b5-d902c0f4fda7"
       }
     },
     "owner": "steppa"

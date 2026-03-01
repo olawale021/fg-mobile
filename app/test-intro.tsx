@@ -51,7 +51,7 @@ export default function TestIntroScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   content: {
     flex: 1,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
     marginBottom: 12,
   },
   infoItem: {
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   secondaryButtonText: {
     fontSize: 16,

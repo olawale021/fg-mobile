@@ -396,11 +396,11 @@ const styles = StyleSheet.create({
   },
   countryItemTextSelected: {
     fontWeight: '600',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   checkmark: {
     fontSize: 18,
-    color: '#192B47',
+    color: '#01B2FE',
     fontWeight: '600',
   },
   passwordContainer: {
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   requirementIconMet: {
-    color: '#10B981',
+    color: '#FF7A1A',
   },
   requirementText: {
     fontSize: 13,
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   requirementTextMet: {
-    color: '#10B981',
+    color: '#FF7A1A',
     fontWeight: '500',
     opacity: 1,
   },
@@ -497,6 +497,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#192B47',
+    color: '#01B2FE',
   },
 });

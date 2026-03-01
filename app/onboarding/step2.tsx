@@ -13,7 +13,7 @@ export default function OnboardingScreen2() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
       {/* Skip button overlay */}
       <SafeAreaView style={styles.skipContainer}>
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 16,
-    color: '#192B47',
+    color: '#01B2FE',
     fontFamily: 'HostGrotesk-Medium',
   },
   image: {
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   content: {
     height: '50%',
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingHorizontal: 32,
     paddingTop: 24,
     paddingBottom: 24,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: '#192B47',
+    color: '#01B2FE',
     fontSize: 18,
     fontFamily: 'HostGrotesk-SemiBold',
   },

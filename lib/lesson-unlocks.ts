@@ -1,26 +1,4 @@
 import { supabase } from './supabase/client';
-import { getAllContentItems, ContentItem } from './lessons';
-import { getWeakAreas } from './weak-areas';
-
-/**
- * Interface for queue item
- */
-interface QueueItem {
-  content_slug: string;
-  queue_position: number;
-  priority_score: number;
-}
-
-/**
- * Interface for unlock record
- */
-interface LessonUnlock {
-  id: string;
-  user_id: string;
-  content_slug: string;
-  unlock_order: number;
-  unlocked_at: string;
-}
 
 /**
  * Interface for score progression result
@@ -31,164 +9,6 @@ export interface ScoreProgressionResult {
   streakBonus: number;
   currentStreak: number;
   scoreBand: string;
-}
-
-/**
- * Map category name to slug
- */
-const categoryNameToSlug: Record<string, string> = {
-  'Problem Clarity': 'problem-clarity',
-  'Customer Understanding': 'customer-understanding',
-  'Product Development': 'product-development',
-  'Traction & Validation': 'traction-validation',
-  'Execution Consistency': 'execution-consistency',
-  'Team Building': 'team-building',
-  'Founder Identity': 'founder-identity',
-};
-
-/**
- * Generate personalized lesson queue based on weak areas
- * Priority: Highest priority weak areas first, then other content
- */
-export async function generateLessonQueue(
-  userId: string,
-  weakCategories: string[]
-): Promise<QueueItem[]> {
-  // Get all lessons
-  const allLessons = getAllContentItems();
-
-  // Convert category names to slugs
-  const weakSlugs = weakCategories
-    .map((name) => categoryNameToSlug[name])
-    .filter(Boolean);
-
-  // Score each lesson
-  const scoredLessons = allLessons.map((lesson) => {
-    let priorityScore = 0;
-
-    // Higher priority for weak area matches
-    const weakIndex = weakSlugs.indexOf(lesson.category_slug);
-    if (weakIndex !== -1) {
-      // First weak area gets highest priority, descending
-      priorityScore = (weakSlugs.length - weakIndex) * 100;
-    }
-
-    // Secondary sort by display_order (lower = earlier)
-    priorityScore += 100 - lesson.display_order;
-
-    return {
-      content_slug: lesson.slug,
-      priority_score: priorityScore,
-    };
-  });
-
-  // Sort by priority score (descending)
-  scoredLessons.sort((a, b) => b.priority_score - a.priority_score);
-
-  // Assign queue positions
-  return scoredLessons.map((lesson, index) => ({
-    ...lesson,
-    queue_position: index + 1,
-  }));
-}
-
-/**
- * Initialize lesson queue for a user after signup
- */
-export async function initializeLessonQueue(userId: string): Promise<void> {
-  try {
-    // Get user's weak areas
-    const weakAreas = await getWeakAreas(userId);
-    const weakCategories = [...new Set(weakAreas.map((area) => area.category))];
-
-    // Generate personalized queue
-    const queue = await generateLessonQueue(userId, weakCategories);
-
-    // Insert queue into database
-    const queueItems = queue.map((item) => ({
-      user_id: userId,
-      content_slug: item.content_slug,
-      queue_position: item.queue_position,
-      priority_score: item.priority_score,
-    }));
-
-    const { error } = await supabase.from('user_lesson_queue').insert(queueItems);
-
-    if (error) {
-      console.error('Error inserting lesson queue:', error);
-      throw error;
-    }
-
-    // Mark signup as completed
-    await supabase
-      .from('users')
-      .update({ signup_completed_at: new Date().toISOString() })
-      .eq('id', userId);
-
-    // Unlock first lesson immediately
-    await unlockNextLesson(userId);
-
-    console.log('Lesson queue initialized successfully');
-  } catch (error) {
-    console.error('Error initializing lesson queue:', error);
-    throw error;
-  }
-}
-
-/**
- * Unlock the next lesson in the user's queue
- */
-export async function unlockNextLesson(userId: string): Promise<boolean> {
-  try {
-    // Get current unlock count
-    const { data: unlocks } = await supabase
-      .from('user_lesson_unlocks')
-      .select('unlock_order')
-      .eq('user_id', userId)
-      .order('unlock_order', { ascending: false })
-      .limit(1);
-
-    const nextPosition = (unlocks?.[0]?.unlock_order || 0) + 1;
-
-    // Get the lesson at this position in the queue
-    const { data: queueItem } = await supabase
-      .from('user_lesson_queue')
-      .select('content_slug')
-      .eq('user_id', userId)
-      .eq('queue_position', nextPosition)
-      .single();
-
-    if (!queueItem) {
-      console.log('No more lessons to unlock');
-      return false;
-    }
-
-    // Insert unlock record
-    const { error } = await supabase.from('user_lesson_unlocks').insert({
-      user_id: userId,
-      content_slug: queueItem.content_slug,
-      unlock_order: nextPosition,
-      unlocked_at: new Date().toISOString(),
-    });
-
-    if (error) {
-      console.error('Error unlocking lesson:', error);
-      return false;
-    }
-
-    // Update last unlock date
-    const today = new Date().toISOString().split('T')[0];
-    await supabase
-      .from('users')
-      .update({ last_unlock_date: today })
-      .eq('id', userId);
-
-    console.log(`Unlocked lesson: ${queueItem.content_slug}`);
-    return true;
-  } catch (error) {
-    console.error('Error unlocking next lesson:', error);
-    return false;
-  }
 }
 
 /**
@@ -231,32 +51,6 @@ export async function isLessonUnlocked(
   return !!data;
 }
 
-/**
- * Get count of uncompleted lessons (unlocked but not completed)
- */
-export async function getUncompletedCount(userId: string): Promise<number> {
-  // Get unlocked lessons
-  const unlockedSlugs = await getUnlockedLessons(userId);
-  if (unlockedSlugs.length === 0) return 0;
-
-  // Get completed lessons
-  const { data: completedItems } = await supabase
-    .from('user_lesson_completions')
-    .select('content_slug')
-    .eq('user_id', userId)
-    .eq('status', 'completed');
-
-  const completedCount = completedItems?.length || 0;
-  return unlockedSlugs.length - completedCount;
-}
-
-/**
- * Check if user can receive a new unlock (backlog < 3)
- */
-export async function canUnlockNewLesson(userId: string): Promise<boolean> {
-  const uncompletedCount = await getUncompletedCount(userId);
-  return uncompletedCount < 3;
-}
 
 /**
  * Mark a lesson as completed and update score with streak bonus
@@ -384,47 +178,11 @@ export function getDateInTimezone(timezone: string): string {
 
 /**
  * Check and perform daily unlock if eligible
- * Called on app open - checks if server missed the unlock
+ * Daily unlocks are now handled server-side by the daily-lesson-unlock edge function.
+ * This is kept as a no-op for backward compatibility with any callers.
  */
-export async function checkAndUnlockIfEligible(userId: string): Promise<void> {
-  try {
-    // Get user data
-    const { data: user } = await supabase
-      .from('users')
-      .select('last_unlock_date, timezone, signup_completed_at')
-      .eq('id', userId)
-      .single();
-
-    if (!user || !user.signup_completed_at) {
-      // User hasn't completed signup, nothing to do
-      return;
-    }
-
-    const timezone = user.timezone || 'Europe/London';
-    const todayInTimezone = getDateInTimezone(timezone);
-
-    // If last unlock was today, nothing to do
-    if (user.last_unlock_date === todayInTimezone) {
-      return;
-    }
-
-    // Check if it's 8am or later
-    if (!is8amOrLaterInTimezone(timezone)) {
-      return;
-    }
-
-    // Check backlog limit
-    const canUnlock = await canUnlockNewLesson(userId);
-    if (!canUnlock) {
-      console.log('Backlog full, skipping unlock');
-      return;
-    }
-
-    // Perform unlock
-    await unlockNextLesson(userId);
-  } catch (error) {
-    console.error('Error in checkAndUnlockIfEligible:', error);
-  }
+export async function checkAndUnlockIfEligible(_userId: string): Promise<void> {
+  // Server-side cron handles lesson generation and unlocking
 }
 
 /**

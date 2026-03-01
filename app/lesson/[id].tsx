@@ -1,21 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, ActivityIndicator, Modal, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, ActivityIndicator, Modal, Animated, Image, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 
 const checkmarkIcon = require('../../assets/images/checkmark.png');
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SkeletonBox, SkeletonLine } from '@/components/skeleton-loader';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
 import { useAuth } from '@/contexts/auth-context';
-import { getLessonById, getAllLessons } from '@/lib/lessons';
+import { useSubscription } from '@/contexts/subscription-context';
+import { PaywallModal } from '@/components/paywall-modal';
+import { FREE_LESSON_LIMIT } from '@/lib/revenucat';
+import { getLessonBySlug, getLessonById, Lesson } from '@/lib/lessons';
 import { isLessonUnlocked, getUnlockedLessons, markLessonCompleted, isLessonCompleted, ScoreProgressionResult, saveLessonTime, incrementLessonReadCount } from '@/lib/lesson-unlocks';
 import { useScreenTimeTracker } from '@/hooks/use-screen-time-tracker';
+import { supabase } from '@/lib/supabase/client';
+let ExpoSpeechRecognitionModule: any = null;
+let useSpeechRecognitionEvent: any = (_event: string, _cb: any) => {};
+try {
+  const mod = require('@jamsch/expo-speech-recognition');
+  ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
+  useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
+} catch {
+  // Native module not available — speech-to-text disabled until rebuild
+}
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
   const { colors } = useTheme();
   const { user } = useAuth();
-  const lesson = getLessonById(id as string);
+  const { isPremium } = useSubscription();
+  const [showPaywall, setShowPaywall] = useState(false);
+  const insets = useSafeAreaInsets();
 
+  const [lesson, setLesson] = useState<Lesson | undefined>(getLessonById(id as string));
+  const [lessonLoading, setLessonLoading] = useState(!lesson);
   const [completedPoints, setCompletedPoints] = useState<Set<number>>(new Set());
   const [isUnlocked, setIsUnlocked] = useState<boolean | null>(null);
   const [unlockedLessonIds, setUnlockedLessonIds] = useState<string[]>([]);
@@ -25,6 +43,63 @@ export default function LessonScreen() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [wasAlreadyCompleted, setWasAlreadyCompleted] = useState(false);
   const [hasIncrementedReadCount, setHasIncrementedReadCount] = useState(false);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [questionText, setQuestionText] = useState('');
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const [aiAnswer, setAiAnswer] = useState('');
+  const [isListening, setIsListening] = useState(false);
+
+  useSpeechRecognitionEvent('result', (event) => {
+    const transcript = event.results[0]?.transcript;
+    if (transcript) {
+      setQuestionText(transcript);
+    }
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    setIsListening(false);
+  });
+
+  useSpeechRecognitionEvent('error', (event) => {
+    console.error('Speech recognition error:', event.error);
+    setIsListening(false);
+  });
+
+  // Load lesson asynchronously (generated lessons need DB fetch)
+  useEffect(() => {
+    async function loadLesson() {
+      if (!user) return;
+      const fetched = await getLessonBySlug(user.id, id as string);
+      if (fetched) {
+        setLesson(fetched);
+      }
+      setLessonLoading(false);
+    }
+    loadLesson();
+  }, [user, id]);
+
+  const speechAvailable = !!ExpoSpeechRecognitionModule;
+
+  const toggleListening = async () => {
+    if (!ExpoSpeechRecognitionModule) {
+      Alert.alert('Not Available', 'Voice input requires a new app build.');
+      return;
+    }
+    if (isListening) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+    const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!result.granted) {
+      Alert.alert('Permission Required', 'Microphone access is needed for voice input.');
+      return;
+    }
+    ExpoSpeechRecognitionModule.start({
+      lang: 'en-US',
+      interimResults: true,
+    });
+    setIsListening(true);
+  };
 
   // Screen time tracking
   const handleSaveTime = useCallback(async (timeSeconds: number) => {
@@ -49,10 +124,19 @@ export default function LessonScreen() {
       }
 
       const unlocked = await isLessonUnlocked(user.id, id as string);
-      setIsUnlocked(unlocked);
 
       // Get all unlocked lessons for navigation
       const unlockedSlugs = await getUnlockedLessons(user.id);
+
+      // If not premium and lesson is beyond free cap, treat as locked
+      const lessonIndex = unlockedSlugs.indexOf(id as string);
+      if (!isPremium && lessonIndex >= FREE_LESSON_LIMIT) {
+        setIsUnlocked(false);
+        setUnlockedLessonIds(unlockedSlugs);
+        return;
+      }
+
+      setIsUnlocked(unlocked);
       setUnlockedLessonIds(unlockedSlugs);
 
       // Check if lesson was already completed
@@ -66,7 +150,7 @@ export default function LessonScreen() {
       }
     }
     checkAccess();
-  }, [user, id, lesson]);
+  }, [user, id, lesson, isPremium]);
 
   // Increment read count once when revisiting a completed lesson
   useEffect(() => {
@@ -81,13 +165,34 @@ export default function LessonScreen() {
   const hasNextLesson = currentIndex >= 0 && currentIndex < unlockedLessonIds.length - 1;
   const hasPrevLesson = currentIndex > 0;
 
-  // Show loading while checking unlock status
-  if (isUnlocked === null) {
+  // Show loading while checking unlock status or loading lesson
+  if (isUnlocked === null || lessonLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <StatusBar barStyle="light-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        {/* Header bar */}
+        <View style={{ backgroundColor: '#01B2FE', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 }}>
+          <SkeletonBox width={40} height={40} borderRadius={8} />
+          <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginLeft: 8 }}>
+            <SkeletonLine width="35%" />
+            <SkeletonLine width="20%" />
+          </View>
+        </View>
+        {/* Progress bar */}
+        <View style={{ backgroundColor: '#01B2FE', paddingHorizontal: 16, paddingBottom: 16 }}>
+          <SkeletonBox height={6} borderRadius={3} />
+        </View>
+        <View style={{ padding: 16 }}>
+          {/* Title card */}
+          <SkeletonBox height={100} borderRadius={12} style={{ marginBottom: 16 }} />
+          {/* Intro card */}
+          <SkeletonBox height={80} borderRadius={12} style={{ marginBottom: 16 }} />
+          {/* Section label */}
+          <SkeletonLine width="35%" style={{ marginBottom: 12 }} />
+          {/* Breakdown points */}
+          <SkeletonBox height={70} borderRadius={12} style={{ marginBottom: 12 }} />
+          <SkeletonBox height={70} borderRadius={12} style={{ marginBottom: 12 }} />
+          <SkeletonBox height={70} borderRadius={12} />
         </View>
       </SafeAreaView>
     );
@@ -100,8 +205,8 @@ export default function LessonScreen() {
         <StatusBar barStyle="light-content" />
         <View style={styles.errorContainer}>
           <Text style={styles.lockedIcon}>🔒</Text>
-          <Text style={[styles.errorText, { color: colors.text }]}>This lesson is not yet unlocked</Text>
-          <Text style={[styles.lockedSubtext, { color: colors.textSecondary }]}>
+          <Text style={[styles.errorText, { color: '#FFFFFF' }]}>This lesson is not yet unlocked</Text>
+          <Text style={[styles.lockedSubtext, { color: '#FFFFFF' }]}>
             New lessons unlock daily at 8am
           </Text>
           <Pressable style={styles.primaryButton} onPress={() => router.back()}>
@@ -117,7 +222,7 @@ export default function LessonScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle="light-content" />
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.text }]}>Lesson not found</Text>
+          <Text style={[styles.errorText, { color: '#FFFFFF' }]}>Lesson not found</Text>
           <Pressable style={styles.primaryButton} onPress={() => router.back()}>
             <Text style={styles.primaryButtonText}>Go Back</Text>
           </Pressable>
@@ -202,9 +307,44 @@ export default function LessonScreen() {
     }
   };
 
+  const handleSubmitQuestion = async () => {
+    if (!questionText.trim() || !user || !lesson) return;
+    setSubmittingQuestion(true);
+    setAiAnswer('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ask-lesson-question`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            question: questionText.trim(),
+            lessonTitle: lesson.title,
+            lessonDescription: lesson.description,
+            lessonIntro: lesson.intro,
+            lessonBreakdown: lesson.quickBreakdown.map(p => `${p.title}: ${p.description}`).join('\n'),
+            rememberThis: lesson.rememberThis.content,
+          }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `Error ${response.status}`);
+      setAiAnswer(data.answer);
+    } catch (error) {
+      console.error('Error getting AI answer:', error);
+      setAiAnswer('Sorry, something went wrong. Please try again.');
+    } finally {
+      setSubmittingQuestion(false);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#192B47" />
+      <StatusBar barStyle="light-content" backgroundColor="#01B2FE" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -215,6 +355,9 @@ export default function LessonScreen() {
           <Text style={styles.lessonCategory}>{lesson.category}</Text>
           <Text style={styles.headerDuration}>{lesson.duration}</Text>
         </View>
+        <Pressable style={styles.questionButton} onPress={() => isPremium ? setShowQuestionModal(true) : setShowPaywall(true)}>
+          <Text style={styles.questionButtonText}>?</Text>
+        </Pressable>
       </View>
 
       {/* Progress Bar */}
@@ -332,6 +475,103 @@ export default function LessonScreen() {
         </Pressable>
       </View>
 
+      {/* Question Modal */}
+      <Modal
+        visible={showQuestionModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => { setShowQuestionModal(false); setAiAnswer(''); setQuestionText(''); }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.questionOverlay}>
+            <Pressable style={styles.questionOverlayDismiss} onPress={() => { setShowQuestionModal(false); setAiAnswer(''); setQuestionText(''); }} />
+            <View style={[styles.questionSheet, { paddingBottom: insets.bottom + 20 }]}>
+            {/* Handle bar */}
+            <View style={styles.sheetHandle} />
+
+            {/* Lesson context tag */}
+            <View style={styles.lessonTag}>
+              <Text style={styles.lessonTagText}>{lesson.title}</Text>
+            </View>
+
+            {aiAnswer ? (
+              /* Answer view */
+              <View style={styles.answerView}>
+                <View style={styles.questionBubble}>
+                  <Text style={styles.questionLabel}>Your question</Text>
+                  <Text style={styles.questionBubbleText}>{questionText}</Text>
+                </View>
+
+                <View style={styles.answerCard}>
+                  <View style={styles.aiLabelRow}>
+                    <View style={styles.aiDot} />
+                    <Text style={styles.aiLabel}>AI Assistant</Text>
+                  </View>
+                  <Text style={styles.answerText}>{aiAnswer}</Text>
+                </View>
+
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => { setShowQuestionModal(false); setAiAnswer(''); setQuestionText(''); }}
+                >
+                  <Text style={styles.doneButtonText}>Got it</Text>
+                </Pressable>
+              </View>
+            ) : (
+              /* Input view */
+              <View style={styles.inputView}>
+                <Text style={styles.sheetTitle}>What do you want to know?</Text>
+                <Text style={styles.sheetSubtitle}>
+                  Ask about this lesson and get an instant answer
+                </Text>
+
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.questionInput}
+                    placeholder="Type your question..."
+                    placeholderTextColor="#9CA3AF"
+                    value={questionText}
+                    onChangeText={setQuestionText}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                  {speechAvailable && (
+                    <Pressable
+                      style={[styles.micIconButton, isListening && styles.micIconButtonActive]}
+                      onPress={toggleListening}
+                    >
+                      <Text style={styles.micIconText}>{isListening ? '■' : '🎤'}</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                {submittingQuestion ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color="#01B2FE" />
+                    <Text style={styles.loadingText}>Thinking...</Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={[styles.askButton, !questionText.trim() && styles.askButtonDisabled]}
+                    onPress={handleSubmitQuestion}
+                    disabled={!questionText.trim()}
+                  >
+                    <Text style={styles.askButtonText}>Ask</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Paywall Modal */}
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+
       {/* Completion Modal */}
       <Modal
         visible={showCompletionModal}
@@ -432,7 +672,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   header: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -471,7 +711,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   progressContainer: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
@@ -509,7 +749,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   badge: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 4,
@@ -525,7 +765,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 24,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
     marginBottom: 8,
     lineHeight: 32,
   },
@@ -565,7 +805,7 @@ const styles = StyleSheet.create({
   },
   breakdownCardCompleted: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#192B47',
+    borderColor: '#01B2FE',
   },
   breakdownHeader: {
     flexDirection: 'row',
@@ -576,13 +816,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   pointNumberCompleted: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   pointNumberText: {
     fontSize: 14,
@@ -593,10 +833,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
   },
   breakdownTitleCompleted: {
-    color: '#192B47',
+    color: '#111827',
   },
   breakdownDescription: {
     fontSize: 15,
@@ -618,13 +858,13 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   completeButtonCompleted: {
-    backgroundColor: '#192B47',
-    borderColor: '#192B47',
+    backgroundColor: '#01B2FE',
+    borderColor: '#01B2FE',
   },
   completeButtonText: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#111827',
   },
   completeButtonTextCompleted: {
     color: '#FFFFFF',
@@ -636,12 +876,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#192B47',
+    borderColor: '#01B2FE',
   },
   rememberTitle: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
     marginBottom: 8,
   },
   rememberContent: {
@@ -681,7 +921,7 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 15,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#111827',
   },
   navButtonTextDisabled: {
     color: '#9CA3AF',
@@ -696,10 +936,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nextButtonActive: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   nextButtonCompleted: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#FF7A1A',
     opacity: 0.8,
   },
   nextButtonText: {
@@ -708,7 +948,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   primaryButton: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -747,7 +987,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -779,7 +1019,7 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#10B981',
+    color: '#FF7A1A',
   },
   streakBonusValue: {
     fontSize: 16,
@@ -794,7 +1034,7 @@ const styles = StyleSheet.create({
   newScoreValue: {
     fontSize: 18,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#111827',
   },
   streakRow: {
     flexDirection: 'row',
@@ -815,7 +1055,7 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
   },
   continueButton: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -826,5 +1066,186 @@ const styles = StyleSheet.create({
     fontFamily: 'HostGrotesk-SemiBold',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  questionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  questionButtonText: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#FFFFFF',
+  },
+  questionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  questionOverlayDismiss: {
+    flex: 1,
+  },
+  questionSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#D1D5DB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  lessonTag: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+  },
+  lessonTagText: {
+    fontSize: 12,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#111827',
+  },
+  inputView: {},
+  sheetTitle: {
+    fontSize: 22,
+    fontFamily: 'HostGrotesk-Bold',
+    color: '#111827',
+    marginBottom: 6,
+  },
+  sheetSubtitle: {
+    fontSize: 14,
+    fontFamily: 'HostGrotesk-Regular',
+    color: '#6B7280',
+    marginBottom: 20,
+  },
+  inputWrapper: {
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  questionInput: {
+    padding: 16,
+    fontSize: 15,
+    fontFamily: 'HostGrotesk-Regular',
+    color: '#111827',
+    minHeight: 100,
+  },
+  micIconButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  micIconButtonActive: {
+    backgroundColor: '#DC2626',
+  },
+  micIconText: {
+    fontSize: 16,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 15,
+    fontFamily: 'HostGrotesk-Medium',
+    color: '#111827',
+  },
+  askButton: {
+    backgroundColor: '#01B2FE',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  askButtonDisabled: {
+    opacity: 0.4,
+  },
+  askButtonText: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#FFFFFF',
+  },
+  answerView: {},
+  questionBubble: {
+    marginBottom: 16,
+  },
+  questionLabel: {
+    fontSize: 11,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  questionBubbleText: {
+    fontSize: 15,
+    fontFamily: 'HostGrotesk-Medium',
+    color: '#111827',
+    lineHeight: 22,
+  },
+  answerCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  aiLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF7A1A',
+    marginRight: 8,
+  },
+  aiLabel: {
+    fontSize: 12,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#6B7280',
+  },
+  answerText: {
+    fontSize: 15,
+    fontFamily: 'HostGrotesk-Regular',
+    color: '#374151',
+    lineHeight: 24,
+  },
+  doneButton: {
+    backgroundColor: '#01B2FE',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  doneButtonText: {
+    fontSize: 16,
+    fontFamily: 'HostGrotesk-SemiBold',
+    color: '#FFFFFF',
   },
 });

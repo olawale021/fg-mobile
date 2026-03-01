@@ -29,7 +29,7 @@
     "tags": ["team", "recruitment", "ownership", "early-stage"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 1
   },
   {
@@ -62,7 +62,7 @@
     "tags": ["problem", "validation", "framework"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 2
   },
   {
@@ -95,7 +95,7 @@
     "tags": ["market", "customers", "targeting"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 3
   },
   {
@@ -128,7 +128,7 @@
     "tags": ["mvp", "product", "building", "validation"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 4
   },
   {
@@ -161,7 +161,7 @@
     "tags": ["customers", "interviews", "discovery", "research"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 5
   },
   {
@@ -194,7 +194,7 @@
     "tags": ["pricing", "revenue", "business-model", "monetization"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 6
   },
   {
@@ -227,7 +227,7 @@
     "tags": ["co-founder", "partnership", "team", "early-stage"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 7
   },
   {
@@ -260,7 +260,7 @@
     "tags": ["runway", "finance", "cash", "survival"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 8
   },
   {
@@ -293,7 +293,7 @@
     "tags": ["users", "growth", "traction", "early-stage"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 9
   },
   {
@@ -326,7 +326,7 @@
     "tags": ["pivot", "strategy", "direction", "change"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 10
   },
   {
@@ -359,7 +359,7 @@
     "tags": ["rejection", "mindset", "resilience", "psychology"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 11
   },
   {
@@ -392,7 +392,7 @@
     "tags": ["building-in-public", "marketing", "audience", "transparency"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 12
   },
   {
@@ -425,7 +425,7 @@
     "tags": ["mental-health", "burnout", "wellbeing", "founder-life"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 13
   },
   {
@@ -458,7 +458,7 @@
     "tags": ["fundraising", "investors", "seed", "venture-capital"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 14
   },
   {
@@ -491,7 +491,7 @@
     "tags": ["focus", "priorities", "strategy", "decision-making"],
     "is_premium": false,
     "estimated_duration_minutes": 5,
-    "author": "Founder Groundworks Team",
+    "author": "Podium Team",
     "display_order": 15
   }
 ]

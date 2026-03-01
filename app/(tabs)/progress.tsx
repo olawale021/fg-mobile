@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SkeletonBox, SkeletonLine } from '@/components/skeleton-loader';
 import { useTheme } from '@/contexts/theme-context';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase/client';
@@ -20,7 +21,7 @@ interface WeeklyActivity {
 }
 
 export default function ProgressScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -73,8 +74,22 @@ export default function ProgressScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={{ padding: 20 }}>
+          {/* Title + subtitle */}
+          <SkeletonLine width="40%" style={{ marginBottom: 8 }} />
+          <SkeletonLine width="55%" style={{ marginBottom: 24 }} />
+          {/* Score card */}
+          <SkeletonBox height={140} borderRadius={16} style={{ marginBottom: 24 }} />
+          {/* Stats grid */}
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+            <SkeletonBox width="48%" height={80} borderRadius={12} />
+            <SkeletonBox width="48%" height={80} borderRadius={12} />
+          </View>
+          {/* Chart area */}
+          <SkeletonBox height={160} borderRadius={12} style={{ marginBottom: 24 }} />
+          {/* Goal cards */}
+          <SkeletonBox height={80} borderRadius={12} style={{ marginBottom: 12 }} />
+          <SkeletonBox height={80} borderRadius={12} />
         </View>
       </SafeAreaView>
     );
@@ -85,7 +100,7 @@ export default function ProgressScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.text }]}>Unable to load progress data</Text>
+          <Text style={[styles.errorText, { color: '#FFFFFF' }]}>Unable to load progress data</Text>
         </View>
       </SafeAreaView>
     );
@@ -97,8 +112,8 @@ export default function ProgressScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Your Progress</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>Your Progress</Text>
+          <Text style={[styles.headerSubtitle, { color: '#FFFFFF' }]}>
             Keep up the great work, {userProfile.first_name}!
           </Text>
         </View>
@@ -142,7 +157,7 @@ export default function ProgressScreen() {
 
         {/* Weekly Activity */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>This Week</Text>
+          <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]}>This Week</Text>
           <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             <View style={styles.activityChart}>
               {weeklyActivity.map((day, index) => (
@@ -168,7 +183,7 @@ export default function ProgressScreen() {
 
         {/* Goals Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Learning Goals</Text>
+          <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]}>Learning Goals</Text>
           <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             <View style={styles.goalHeader}>
               <Text style={[styles.goalTitle, { color: colors.text }]}>Weekly Target</Text>
@@ -198,7 +213,7 @@ export default function ProgressScreen() {
 
         {/* Achievements */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Achievements</Text>
+          <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]}>Recent Achievements</Text>
           <View style={[styles.achievementCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             <Text style={styles.achievementIcon}>🏆</Text>
             <View style={styles.achievementContent}>

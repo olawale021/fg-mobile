@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   optionSelected: {
-    borderColor: '#192B47',
+    borderColor: '#01B2FE',
     backgroundColor: '#FFFFFF',
   },
   radio: {
@@ -144,18 +144,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   radioSelected: {
-    borderColor: '#192B47',
+    borderColor: '#01B2FE',
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   optionText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
     flex: 1,
   },
 });

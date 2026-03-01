@@ -14,7 +14,7 @@ import {
   Image,
 } from 'react-native';
 
-const logo = require('../assets/logos/mobile_icom.png');
+const logo = require('../assets/logos/Podium_Mark_TranspBG.png');
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
@@ -49,7 +49,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#192B47" />
+      <StatusBar barStyle="light-content" backgroundColor="#01B2FE" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -133,7 +133,7 @@ export default function LoginScreen() {
 
           {/* Sign Up Link */}
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>New to Founder Groundworks?</Text>
+            <Text style={styles.signupText}>New to Podium?</Text>
             <Pressable onPress={() => router.push('/onboarding')}>
               <Text style={styles.signupLink}>Take the Assessment</Text>
             </Pressable>
@@ -147,7 +147,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   keyboardView: {
     flex: 1,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   divider: {
     flexDirection: 'row',

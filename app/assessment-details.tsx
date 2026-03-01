@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SkeletonBox, SkeletonLine } from '@/components/skeleton-loader';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/theme-context';
 import { useAuth } from '@/contexts/auth-context';
@@ -39,7 +40,7 @@ interface InitialAssessment {
 const LESSONS_REQUIRED_FOR_RETAKE = 5;
 
 export default function AssessmentDetailsScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const { setIsRetake } = useTestStore();
   const [loading, setLoading] = useState(true);
@@ -139,17 +140,32 @@ export default function AssessmentDetailsScreen() {
     const highScoreAnswers = ['Yes', 'Very clear', 'Yes, many', 'Yes, working', 'Yes, measurable'];
     const lowScoreAnswers = ['No', 'Not clear', 'Solo'];
 
-    if (highScoreAnswers.includes(answer)) return '#10B981';
+    if (highScoreAnswers.includes(answer)) return '#FF7A1A';
     if (lowScoreAnswers.includes(answer)) return '#EF4444';
     return '#F59E0B';
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle="light-content" backgroundColor="#192B47" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+      <SafeAreaView style={[styles.container, { backgroundColor: '#01B2FE' }]}>
+        <StatusBar barStyle="light-content" backgroundColor="#01B2FE" />
+        {/* Header bar */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 }}>
+          <SkeletonBox width={40} height={40} borderRadius={8} />
+          <SkeletonLine width="40%" />
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ padding: 20 }}>
+          {/* Info card */}
+          <SkeletonBox height={60} borderRadius={12} style={{ marginBottom: 20 }} />
+          {/* Score comparison card */}
+          <SkeletonBox height={140} borderRadius={12} style={{ marginBottom: 20 }} />
+          {/* Section title */}
+          <SkeletonLine width="30%" style={{ marginBottom: 12 }} />
+          {/* Question cards */}
+          <SkeletonBox height={70} borderRadius={12} style={{ marginBottom: 12 }} />
+          <SkeletonBox height={70} borderRadius={12} style={{ marginBottom: 12 }} />
+          <SkeletonBox height={70} borderRadius={12} />
         </View>
       </SafeAreaView>
     );
@@ -157,8 +173,8 @@ export default function AssessmentDetailsScreen() {
 
   if (!testResponse) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle="light-content" backgroundColor="#192B47" />
+      <SafeAreaView style={[styles.container, { backgroundColor: '#01B2FE' }]}>
+        <StatusBar barStyle="light-content" backgroundColor="#01B2FE" />
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Text style={[styles.backButtonText, { color: '#FFFFFF' }]}>←</Text>
@@ -167,7 +183,7 @@ export default function AssessmentDetailsScreen() {
           <View style={styles.placeholder} />
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, { color: '#6B7280' }]}>No assessment found</Text>
+          <Text style={[styles.emptyText, { color: '#FFFFFF' }]}>No assessment found</Text>
         </View>
       </SafeAreaView>
     );
@@ -176,8 +192,8 @@ export default function AssessmentDetailsScreen() {
   const scoredQuestions = questions.filter(q => q.isScored);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#192B47" />
+    <SafeAreaView style={[styles.container, { backgroundColor: '#01B2FE' }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#01B2FE" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -205,7 +221,7 @@ export default function AssessmentDetailsScreen() {
               {/* Initial Assessment Score */}
               <View style={styles.scoreItem}>
                 <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>Initial Score</Text>
-                <Text style={[styles.scoreValue, { color: '#192B47' }]}>{initialAssessment.base_score}</Text>
+                <Text style={[styles.scoreValue, { color: '#111827' }]}>{initialAssessment.base_score}</Text>
                 <View style={[styles.scoreBandPill, { backgroundColor: '#E5E7EB' }]}>
                   <Text style={[styles.scoreBandText, { color: '#374151' }]}>
                     {getScoreBandLabel(initialAssessment.score_band as any)}
@@ -224,8 +240,8 @@ export default function AssessmentDetailsScreen() {
               {userScores.current_score !== initialAssessment.base_score && (
                 <View style={styles.scoreItem}>
                   <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>Current Score</Text>
-                  <Text style={[styles.scoreValue, { color: '#192B47' }]}>{userScores.current_score}</Text>
-                  <View style={[styles.scoreBandPill, { backgroundColor: '#192B47' }]}>
+                  <Text style={[styles.scoreValue, { color: '#111827' }]}>{userScores.current_score}</Text>
+                  <View style={[styles.scoreBandPill, { backgroundColor: '#01B2FE' }]}>
                     <Text style={[styles.scoreBandText, { color: '#FFFFFF' }]}>
                       {getScoreBandLabel(userScores.current_score_band as any)}
                     </Text>
@@ -238,11 +254,11 @@ export default function AssessmentDetailsScreen() {
             {userScores.current_score !== initialAssessment.base_score && (
               <View style={[
                 styles.scoreChangeContainer,
-                { backgroundColor: userScores.current_score > initialAssessment.base_score ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
+                { backgroundColor: userScores.current_score > initialAssessment.base_score ? 'rgba(255, 122, 26, 0.15)' : 'rgba(239, 68, 68, 0.1)' }
               ]}>
                 <Text style={[
                   styles.scoreChangeText,
-                  { color: userScores.current_score > initialAssessment.base_score ? '#10B981' : '#EF4444' }
+                  { color: userScores.current_score > initialAssessment.base_score ? '#FF7A1A' : '#EF4444' }
                 ]}>
                   {userScores.current_score > initialAssessment.base_score
                     ? `+${userScores.current_score - initialAssessment.base_score} points improvement!`
@@ -318,7 +334,7 @@ export default function AssessmentDetailsScreen() {
         </View>
 
         {/* Section Label */}
-        <Text style={[styles.sectionLabel, { color: '#FFFFFF' }]}>Your Answers</Text>
+        <Text style={[styles.sectionLabel, { color: '#111827' }]}>Your Answers</Text>
 
         {/* Questions List */}
         {scoredQuestions.map((question, index) => {
@@ -339,7 +355,7 @@ export default function AssessmentDetailsScreen() {
 
               <View style={styles.answerContainer}>
                 <Text style={[styles.answerLabel, { color: '#6B7280' }]}>Your answer:</Text>
-                <View style={[styles.answerBadge, { backgroundColor: '#192B47' }]}>
+                <View style={[styles.answerBadge, { backgroundColor: '#01B2FE' }]}>
                   <Text style={[styles.answerText, { color: '#FFFFFF' }]}>{answer}</Text>
                 </View>
               </View>
@@ -358,7 +374,7 @@ export default function AssessmentDetailsScreen() {
 
           <View style={styles.answerContainer}>
             <Text style={[styles.answerLabel, { color: '#6B7280' }]}>Your preference:</Text>
-            <View style={[styles.answerBadge, { backgroundColor: '#192B47' }]}>
+            <View style={[styles.answerBadge, { backgroundColor: '#01B2FE' }]}>
               <Text style={[styles.answerText, { color: '#FFFFFF' }]}>{testResponse.q10}</Text>
             </View>
           </View>
@@ -394,7 +410,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   backButton: {
     width: 40,
@@ -605,7 +621,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   retakeButton: {
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 10,

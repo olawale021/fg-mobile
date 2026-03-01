@@ -268,7 +268,7 @@ export default function ChangePasswordScreen() {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#192B47" />
+                <ActivityIndicator size="small" color="#01B2FE" />
               ) : (
                 <Text style={styles.saveButtonText}>Update Password</Text>
               )}
@@ -291,7 +291,7 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   keyboardView: {
     flex: 1,
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
   },
   requirementMet: {
-    color: '#10B981',
+    color: '#FF7A1A',
   },
   buttons: {
     marginTop: 32,
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   cancelButton: {
     backgroundColor: 'transparent',

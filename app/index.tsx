@@ -23,7 +23,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/logos/FounderGroundworksTransparentWhite.png')}
+        source={require('../assets/logos/Podium_Mark_WhiteBG.png')}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -34,7 +34,7 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },

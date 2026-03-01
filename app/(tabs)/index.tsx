@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, StatusBar, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, Image } from 'react-native';
 
 const waveIcon = require('../../assets/images/wave.png');
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SkeletonBox, SkeletonLine } from '@/components/skeleton-loader';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '@/lib/supabase/client';
 import { getScoreBandLabel } from '@/lib/scoring';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
 import { router } from 'expo-router';
-import { getLessonsForWeakAreas, Lesson } from '@/lib/lessons';
+import { getAllLessonsForUser, getLessonBySlug, Lesson } from '@/lib/lessons';
 import { getWeakAreasByCategory } from '@/lib/weak-areas';
 import { getUnlockedLessons } from '@/lib/lesson-unlocks';
 
@@ -29,7 +30,7 @@ interface UserProfile {
 
 export default function DashboardScreen() {
   const { user, loading: authLoading } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [weakCategories, setWeakCategories] = useState<string[]>([]);
@@ -86,11 +87,26 @@ export default function DashboardScreen() {
       const completedSet = new Set(completedData?.map(c => c.content_slug) || []);
       setCompletedSlugs(completedSet);
 
-      // Get recommended lessons based on weak areas, filtered to unlocked only
-      const allRecommended = getLessonsForWeakAreas(categoryNames, 10);
-      const unlockedRecommended = allRecommended.filter(lesson =>
-        unlockedSlugs.includes(lesson.id)
-      ).slice(0, 5);
+      // Get all generated lessons for this user
+      const generatedLessons = await getAllLessonsForUser(user.id);
+      const lessonMap = new Map<string, Lesson>();
+      for (const l of generatedLessons) {
+        lessonMap.set(l.id, l);
+      }
+
+      // For unlocked slugs not in generated lessons, try legacy fallback
+      for (const slug of unlockedSlugs) {
+        if (!lessonMap.has(slug)) {
+          const legacy = await getLessonBySlug(user.id, slug);
+          if (legacy) lessonMap.set(slug, legacy);
+        }
+      }
+
+      // Show unlocked lessons as recommended (up to 5)
+      const unlockedRecommended = unlockedSlugs
+        .map(slug => lessonMap.get(slug))
+        .filter((l): l is Lesson => !!l)
+        .slice(0, 5);
       setRecommendedLessons(unlockedRecommended);
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -103,8 +119,22 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#192B47" />
+        <View style={styles.contentContainer}>
+          {/* Greeting */}
+          <SkeletonLine width="40%" style={{ marginBottom: 8 }} />
+          <SkeletonLine width="25%" style={{ marginBottom: 24 }} />
+          {/* Score card */}
+          <SkeletonBox height={160} borderRadius={16} style={{ marginBottom: 16 }} />
+          {/* Stats grid */}
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+            <SkeletonBox width="48%" height={100} borderRadius={12} />
+            <SkeletonBox width="48%" height={100} borderRadius={12} />
+          </View>
+          {/* Section title */}
+          <SkeletonLine width="35%" style={{ marginBottom: 16 }} />
+          {/* Lesson cards */}
+          <SkeletonBox height={120} borderRadius={16} style={{ marginBottom: 16 }} />
+          <SkeletonBox height={120} borderRadius={16} />
         </View>
       </SafeAreaView>
     );
@@ -115,7 +145,7 @@ export default function DashboardScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.text }]}>Unable to load profile</Text>
+          <Text style={[styles.errorText, { color: '#FFFFFF' }]}>Unable to load profile</Text>
         </View>
       </SafeAreaView>
     );
@@ -129,25 +159,26 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View>
             <View style={styles.greetingRow}>
-              <Text style={[styles.greeting, { color: colors.text }]}>Hello, {userProfile.first_name}! </Text>
+              <Text style={[styles.greeting, { color: '#FFFFFF' }]}>Hello, {userProfile.first_name}! </Text>
               <Image source={waveIcon} style={styles.waveIcon} />
             </View>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Welcome to your dashboard</Text>
+            <Text style={[styles.subtitle, { color: '#FFFFFF' }]}>Welcome to your dashboard</Text>
           </View>
         </View>
+
 
         {/* Founder Score Card */}
         <View style={[styles.scoreCard, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}>
           <View style={styles.scoreHeader}>
-            <Text style={[styles.scoreTitle, { color: '#192B47' }]}>Your Founder Score</Text>
-            <View style={[styles.scoreBadge, { backgroundColor: '#192B47' }]}>
+            <Text style={[styles.scoreTitle, { color: '#111827' }]}>Your Founder Score</Text>
+            <View style={[styles.scoreBadge, { backgroundColor: '#01B2FE' }]}>
               <Text style={[styles.scoreBadgeText, { color: '#FFFFFF' }]}>
                 {getScoreBandLabel((userProfile.latest_score_band ?? userProfile.score_band) as any)}
               </Text>
             </View>
           </View>
           <View style={styles.scoreRow}>
-            <Text style={[styles.scoreValue, { color: '#192B47' }]}>{userProfile.latest_score ?? userProfile.base_score}</Text>
+            <Text style={[styles.scoreValue, { color: '#111827' }]}>{userProfile.latest_score ?? userProfile.base_score}</Text>
             <Text style={[styles.scoreLabel, { color: '#6B7280' }]}>/100</Text>
           </View>
 
@@ -160,7 +191,7 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          <Pressable style={[styles.viewDetailsButton, { backgroundColor: '#192B47' }]} onPress={() => router.push('/assessment-details')}>
+          <Pressable style={[styles.viewDetailsButton, { backgroundColor: '#01B2FE' }]} onPress={() => router.push('/assessment-details')}>
             <Text style={[styles.viewDetailsText, { color: '#FFFFFF' }]}>View Details</Text>
           </Pressable>
         </View>
@@ -173,7 +204,7 @@ export default function DashboardScreen() {
               <View style={styles.categoryList}>
                 {weakCategories.map((category, index) => (
                   <View key={index} style={[styles.categoryBadge, { backgroundColor: '#F3F4F6' }]}>
-                    <Text style={[styles.categoryBadgeText, { color: '#192B47' }]}>
+                    <Text style={[styles.categoryBadgeText, { color: '#111827' }]}>
                       {category}
                     </Text>
                   </View>
@@ -188,7 +219,7 @@ export default function DashboardScreen() {
             {recommendedLessons.length > 0 ? (
               <View style={styles.pathList}>
                 {recommendedLessons.slice(0, 3).map((lesson, index) => (
-                  <Text key={index} style={[styles.pathItem, { color: '#192B47' }]} numberOfLines={1}>
+                  <Text key={index} style={[styles.pathItem, { color: '#111827' }]} numberOfLines={1}>
                     • {lesson.title}
                   </Text>
                 ))}
@@ -207,17 +238,17 @@ export default function DashboardScreen() {
         {/* Continue Learning Section - only show if user hasn't completed any lessons */}
         {completedSlugs.size === 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Continue Learning</Text>
+            <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]}>Continue Learning</Text>
             <Pressable
               style={[styles.emptyState, { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }]}
               onPress={() => router.push('/(tabs)/library')}
             >
               <Text style={styles.emptyStateIcon}>📖</Text>
-              <Text style={[styles.emptyStateText, { color: '#192B47' }]}>Start your first lesson</Text>
+              <Text style={[styles.emptyStateText, { color: '#111827' }]}>Start your first lesson</Text>
               <Text style={[styles.emptyStateSubtext, { color: '#6B7280' }]}>
                 Explore curated content to strengthen your founder skills
               </Text>
-              <View style={[styles.primaryButton, { backgroundColor: '#192B47' }]}>
+              <View style={[styles.primaryButton, { backgroundColor: '#01B2FE' }]}>
                 <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>Browse Content</Text>
               </View>
             </Pressable>
@@ -226,7 +257,7 @@ export default function DashboardScreen() {
 
         {/* Recommended Content */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended for You</Text>
+          <Text style={[styles.sectionTitle, { color: '#FFFFFF' }]}>Recommended for You</Text>
 
           {recommendedLessons.map((lesson) => {
             const isCompleted = completedSlugs.has(lesson.id);
@@ -241,7 +272,7 @@ export default function DashboardScreen() {
                 onPress={() => router.push(`/lesson/${lesson.id}`)}
               >
                 <View style={styles.badgeRow}>
-                  <View style={[styles.lessonBadge, { backgroundColor: '#192B47' }]}>
+                  <View style={[styles.lessonBadge, { backgroundColor: '#01B2FE' }]}>
                     <Text style={[styles.lessonBadgeText, { color: '#FFFFFF' }]}>LESSON</Text>
                   </View>
                   {isCompleted && (
@@ -254,14 +285,14 @@ export default function DashboardScreen() {
                 <Text style={[styles.lessonCategory, { color: '#6B7280' }]}>
                   {lesson.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                 </Text>
-                <Text style={[styles.lessonTitle, { color: '#192B47' }]}>{lesson.title}</Text>
+                <Text style={[styles.lessonTitle, { color: '#111827' }]}>{lesson.title}</Text>
                 <Text style={[styles.lessonDescription, { color: '#6B7280' }]} numberOfLines={2}>
                   {lesson.description}
                 </Text>
 
                 <View style={styles.lessonFooter}>
                   <Text style={[styles.lessonDuration, { color: '#6B7280' }]}>⏱️ {lesson.duration}</Text>
-                  <View style={[styles.startButton, { backgroundColor: isCompleted ? '#10B981' : '#192B47' }]}>
+                  <View style={[styles.startButton, { backgroundColor: isCompleted ? '#FF7A1A' : '#01B2FE' }]}>
                     <Text style={[styles.startButtonText, { color: '#FFFFFF' }]}>
                       {isCompleted ? 'Review →' : 'Start →'}
                     </Text>
@@ -294,8 +325,6 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
   },
   scrollView: {
     flex: 1,
@@ -313,7 +342,6 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 32,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   waveIcon: {
@@ -325,14 +353,10 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
   },
   scoreCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
     padding: 16,
     marginBottom: 16,
   },
@@ -345,10 +369,8 @@ const styles = StyleSheet.create({
   scoreTitle: {
     fontSize: 18,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
   },
   scoreBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -356,7 +378,6 @@ const styles = StyleSheet.create({
   scoreBadgeText: {
     fontSize: 12,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
     textTransform: 'uppercase',
   },
   scoreRow: {
@@ -367,13 +388,11 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 44,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
     lineHeight: 48,
   },
   scoreLabel: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
     marginLeft: 4,
     marginTop: 8,
   },
@@ -403,7 +422,6 @@ const styles = StyleSheet.create({
     color: '#D97706',
   },
   viewDetailsButton: {
-    backgroundColor: '#FFFFFF',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -411,7 +429,6 @@ const styles = StyleSheet.create({
   viewDetailsText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -422,11 +439,9 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '47%',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
   },
   statIcon: {
     fontSize: 32,
@@ -435,13 +450,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
   },
   statLabel: {
     fontSize: 12,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
     marginBottom: 8,
   },
   categoryList: {
@@ -466,21 +478,16 @@ const styles = StyleSheet.create({
   pathItem: {
     fontSize: 12,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
     lineHeight: 16,
   },
   moreItems: {
     fontSize: 11,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
-    opacity: 0.7,
     marginTop: 4,
   },
   emptyMessage: {
     fontSize: 13,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.6,
     fontStyle: 'italic',
   },
   section: {
@@ -489,19 +496,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 24,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
     marginBottom: 16,
   },
   lessonCard: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
   },
   lessonCardCompleted: {
-    borderColor: '#10B981',
+    borderColor: '#FF7A1A',
     borderWidth: 2,
   },
   badgeRow: {
@@ -511,7 +515,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   completedBadge: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#FF7A1A',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -522,7 +526,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   lessonBadge: {
-    backgroundColor: '#192B47',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -530,13 +533,11 @@ const styles = StyleSheet.create({
   lessonBadgeText: {
     fontSize: 10,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   lessonCategory: {
     fontSize: 12,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#6B7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -544,14 +545,12 @@ const styles = StyleSheet.create({
   lessonTitle: {
     fontSize: 20,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
     marginBottom: 8,
     lineHeight: 26,
   },
   lessonDescription: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#6B7280',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -563,10 +562,8 @@ const styles = StyleSheet.create({
   lessonDuration: {
     fontSize: 13,
     fontFamily: 'HostGrotesk-Medium',
-    color: '#6B7280',
   },
   startButton: {
-    backgroundColor: '#192B47',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -574,15 +571,12 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
   },
   emptyState: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
   },
   emptyStateIcon: {
     fontSize: 36,
@@ -591,27 +585,24 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   emptyStateSubtext: {
     fontSize: 13,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
     textAlign: 'center',
     marginBottom: 14,
   },
   contentCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
     marginBottom: 12,
   },
   contentBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#01B2FE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -626,14 +617,13 @@ const styles = StyleSheet.create({
   contentTitle: {
     fontSize: 20,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#FFFFFF',
+    color: '#111827',
     marginBottom: 8,
   },
   contentDescription: {
     fontSize: 14,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
+    color: '#6B7280',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -645,38 +635,35 @@ const styles = StyleSheet.create({
   contentMetaText: {
     fontSize: 13,
     fontFamily: 'HostGrotesk-Regular',
-    color: '#FFFFFF',
-    opacity: 0.9,
+    color: '#6B7280',
   },
   primaryButton: {
-    backgroundColor: '#FFFFFF',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 10,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 5,
   },
   primaryButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
   },
   secondaryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#F3F4F6',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   secondaryButtonText: {
     fontSize: 15,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#FFFFFF',
+    color: '#111827',
   },
 });

@@ -15,6 +15,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SkeletonBox, SkeletonLine } from '@/components/skeleton-loader';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
 import { supabase } from '@/lib/supabase/client';
@@ -156,8 +157,23 @@ export default function EditProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
+        <View style={{ padding: 24 }}>
+          {/* Header bar */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+            <SkeletonBox width={40} height={40} borderRadius={8} />
+            <SkeletonLine width="30%" />
+            <View style={{ width: 40 }} />
+          </View>
+          {/* Form groups */}
+          {[1, 2, 3, 4].map(i => (
+            <View key={i} style={{ marginBottom: 24 }}>
+              <SkeletonLine width="25%" style={{ marginBottom: 8 }} />
+              <SkeletonBox height={48} borderRadius={10} />
+            </View>
+          ))}
+          {/* Buttons */}
+          <SkeletonBox height={52} borderRadius={10} style={{ marginBottom: 12 }} />
+          <SkeletonBox height={52} borderRadius={10} />
         </View>
       </SafeAreaView>
     );
@@ -276,7 +292,7 @@ export default function EditProfileScreen() {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#192B47" />
+                <ActivityIndicator size="small" color="#01B2FE" />
               ) : (
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               )}
@@ -348,7 +364,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   loadingContainer: {
     flex: 1,
@@ -461,7 +477,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   cancelButton: {
     backgroundColor: 'transparent',
@@ -501,7 +517,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'HostGrotesk-Bold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   modalClose: {
     fontSize: 20,
@@ -527,11 +543,11 @@ const styles = StyleSheet.create({
   },
   countryTextSelected: {
     fontFamily: 'HostGrotesk-SemiBold',
-    color: '#192B47',
+    color: '#01B2FE',
   },
   checkmark: {
     fontSize: 18,
-    color: '#192B47',
+    color: '#01B2FE',
     fontFamily: 'HostGrotesk-Bold',
   },
 });

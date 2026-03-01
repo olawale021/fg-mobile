@@ -24,14 +24,14 @@ export default function OnboardingScreen1() {
         <View style={styles.content}>
           <View style={styles.imageContainer}>
             <Image
-              source={require('../../assets/logos/FounderGroundworksTransparentWhite.png')}
+              source={require('../../assets/logos/Podium_Mark_TranspBG.png')}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
 
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Welcome to{'\n'}Founder Groundworks</Text>
+            <Text style={styles.title}>Welcome to{'\n'}Podium</Text>
             <Text style={styles.description}>
               An institute for people starting from zero, teaching first-time founders how to think, speak, and operate with discipline.
             </Text>
@@ -58,7 +58,7 @@ export default function OnboardingScreen1() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#192B47',
+    backgroundColor: '#01B2FE',
   },
   safeArea: {
     flex: 1,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: '#192B47',
+    color: '#01B2FE',
     fontSize: 18,
     fontFamily: 'HostGrotesk-SemiBold',
   },

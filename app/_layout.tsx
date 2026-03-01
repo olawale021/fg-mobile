@@ -10,6 +10,7 @@ import "../global.css";
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ThemeProvider } from '@/contexts/theme-context';
+import { SubscriptionProvider } from '@/contexts/subscription-context';
 import { checkAndUnlockIfEligible } from '@/lib/lesson-unlocks';
 import { setupPushNotifications, configureAndroidChannel } from '@/lib/push-notifications';
 
@@ -70,6 +71,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider>
+        <SubscriptionProvider>
         <AppInitializer>
           <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack>
@@ -91,6 +93,7 @@ export default function RootLayout() {
             <StatusBar style="auto" />
           </NavigationThemeProvider>
         </AppInitializer>
+        </SubscriptionProvider>
       </ThemeProvider>
     </AuthProvider>
   );
